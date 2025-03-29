@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Xml;
 using System.Diagnostics.CodeAnalysis;
+using Init7.Epg.Schema;
 
 namespace Init7.Epg
 {
@@ -21,10 +22,7 @@ namespace Init7.Epg
 
         protected abstract void FinishAppending();
 
-        [UnconditionalSuppressMessage(
-            "Trimming",
-            "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
-            Justification = "Only uses types in the same assembly")]
+        [RequiresUnreferencedCode("XmlSerializer")]
         public string BuildToString()
         {
             FinishAppending();
@@ -36,6 +34,7 @@ namespace Init7.Epg
             return stringWriter.ToString();
         }
 
+        [RequiresUnreferencedCode("XmlSerializer")]
         public void BuildToStream(Stream stream)
         {
             FinishAppending();
@@ -50,10 +49,7 @@ namespace Init7.Epg
             serializer.Serialize(xmlWriter, _root);
         }
 
-        [UnconditionalSuppressMessage(
-            "Trimming",
-            "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
-            Justification = "Only uses types in the same assembly")]
+        [RequiresUnreferencedCode("XmlSerializer")]
         public void BuildToFile(string filePath)
         {
             FinishAppending();

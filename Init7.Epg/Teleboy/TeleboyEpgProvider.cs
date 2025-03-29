@@ -28,6 +28,28 @@ namespace Init7.Epg.Teleboy
 
         private HashSet<string> _channelWarnings = new HashSet<string>();
 
+        /// <summary>
+        /// mapping for specific channel names that are called differently
+        /// </summary>
+        private static readonly Dictionary<string, string> _teleboyToInit7 = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        {
+            // swiss
+            { "blueZoomde.ch", "BlueZoomD.ch" },
+            { "HelvetiaOneTV.ch", "Helvetiaone.ch" },
+            // german
+            { "Pro7Maxx.de", "ProSiebenMaxx.de" },
+            // french
+            { "TV5MondeFBS.fr", "TV5MondeFranceBelgiumSwitzerlandMonaco.fr" },
+            { "ArteFr.fr", "arte.fr" },
+            { "M6Suisse.fr", "M6Switzerland.ch" },
+            // italian
+            { "RTL1025.it", "RTL1025TV.it" },
+            { "DMAXItalia.it", "DMAX.it"},
+            { "WarnerTVItaly.it", "WarnerTv.it" },
+            // portuguese
+            { "RTPi.pt", "RTPInternacional.pt" },
+        };
+
         (DateTimeOffset, DateTimeOffset) HandleChunk_Teleboy(
             TeleboyEpgResponse epgIn,
             EpgBuilder epgOut)
@@ -57,10 +79,23 @@ namespace Init7.Epg.Teleboy
                 };
                 if (!_config.AppendOnlyMode)
                 {
+                    // if we're not in append only mode, we add any channel we see
                     epgOut.TryAddChannel(chan_out);
                 } else
                 {
-                    if (!epgOut.TryGetChannel(id, out var existing))
+                    // check if we have this channel from Init7
+                    if (epgOut.TryGetChannel(id, out var existing))
+                    {
+                        // copy the channel ID from the existing entry
+                        // (in case the casing is different)
+                        chan_out.id = existing.id;
+                    }
+                    // check if it's called differently
+                    else if (_teleboyToInit7.TryGetValue(id, out var mapValue))
+                    {
+                        id = mapValue;
+                        chan_out.id = mapValue;
+                    } else
                     {
                         if (!_channelWarnings.Contains(id))
                         {
@@ -69,9 +104,6 @@ namespace Init7.Epg.Teleboy
                         }
                         continue;
                     }
-
-                    // copy the channel ID from the existing entry
-                    chan_out.id = existing.id;
                 }
 
 

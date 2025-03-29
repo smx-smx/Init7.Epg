@@ -1,11 +1,9 @@
 ﻿using Init7.Epg;
 using Init7.Epg.Init7;
-using Init7.Epg.Schema;
 using Init7.Epg.Teleboy;
-using m3uParser;
-using m3uParser.Model;
 using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 
 public class Program
@@ -13,6 +11,7 @@ public class Program
 
     private EpgBuilder _epgOut;
 
+    [RequiresUnreferencedCode("XmlSerializer")]
     async Task Run(string outFilePath)
     {
         var providers = new List<IEpgProvider>() {
@@ -30,7 +29,7 @@ public class Program
             await prov.FillEpg(_epgOut);
         }
 
-        using var fileStream = new FileStream(
+        var fileStream = new FileStream(
             outFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
         fileStream.SetLength(0);
 
@@ -44,6 +43,21 @@ public class Program
         }
 
         _epgOut.BuildToStream(stream);
+        await stream.FlushAsync();
+        await stream.DisposeAsync();
+
+        if (isCompressed)
+        {
+            await fileStream.DisposeAsync();
+        }
+
+        foreach (var prov in providers)
+        {
+            if (prov is IDisposable disp)
+            {
+                disp.Dispose();
+            }
+        }
     }
 
     public Program()
@@ -51,6 +65,7 @@ public class Program
         _epgOut = new EpgBuilder();
     }
 
+    [RequiresUnreferencedCode("XmlSerializer")]
     public static async Task Main(string[] args)
     {
         Trace.Listeners.Add(new ConsoleTraceListener());

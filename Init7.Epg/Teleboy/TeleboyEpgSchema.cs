@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Init7.Epg.Teleboy
@@ -87,7 +89,7 @@ namespace Init7.Epg.Teleboy
         public string? Name { get; set; }
     }
 
-    public class Station
+    public partial class Station
     {
         [JsonPropertyName("logos")]
         public StationLogos? Logos { get; set; }
@@ -137,9 +139,17 @@ namespace Init7.Epg.Teleboy
 
         public string GetChannelId()
         {
-            var labelConverted = Label?.Replace(" ", "");
-            return $"{labelConverted}.{Country}";
+            var labelConverted = Label?.Let(it => LabelReplace().Replace(it, ""));
+            var countryConverted = Country switch
+            {
+                "gb" => "uk",
+                _ => Country
+            };
+            return $"{labelConverted}.{countryConverted}";
         }
+
+        [GeneratedRegex(@"[ \!]")]
+        private static partial Regex LabelReplace();
     }
 
     // --- Program Image Information ---
