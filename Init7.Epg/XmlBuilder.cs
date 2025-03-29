@@ -36,6 +36,20 @@ namespace Init7.Epg
             return stringWriter.ToString();
         }
 
+        public void BuildToStream(Stream stream)
+        {
+            FinishAppending();
+
+            var serializer = new XmlSerializer(_root.GetType());
+
+            using var xmlWriter = XmlWriter.Create(stream, new XmlWriterSettings
+            {
+                Indent = true
+            });
+
+            serializer.Serialize(xmlWriter, _root);
+        }
+
         [UnconditionalSuppressMessage(
             "Trimming",
             "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
@@ -44,17 +58,11 @@ namespace Init7.Epg
         {
             FinishAppending();
 
-            var serializer = new XmlSerializer(_root.GetType());
             using var stream = new FileStream(
                 filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
             stream.SetLength(0);
 
-            using var xmlWriter = XmlWriter.Create(stream, new XmlWriterSettings
-            {
-                Indent = true
-            });
-
-            serializer.Serialize(xmlWriter, _root);
+            BuildToStream(stream);
         }
 
         public T Build()

@@ -6,6 +6,7 @@ using m3uParser;
 using m3uParser.Model;
 using System.Data;
 using System.Diagnostics;
+using System.IO.Compression;
 
 public class Program
 {
@@ -28,7 +29,21 @@ public class Program
             await prov.Initialize();
             await prov.FillEpg(_epgOut);
         }
-        _epgOut.BuildToFile(outFilePath);
+
+        using var fileStream = new FileStream(
+            outFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+        fileStream.SetLength(0);
+
+        Stream stream = fileStream;
+
+        var isCompressed = outFilePath.EndsWith(".gz", StringComparison.InvariantCultureIgnoreCase);
+        if (isCompressed)
+        {
+            var gzipStream = new GZipStream(fileStream, CompressionLevel.Optimal);
+            stream = gzipStream;
+        }
+
+        _epgOut.BuildToStream(stream);
     }
 
     public Program()
@@ -40,7 +55,7 @@ public class Program
     {
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        var outFilePath = args.ElementAtOrDefault(0) ?? "output.xml";
+        var outFilePath = args.ElementAtOrDefault(0) ?? "output.xml.gz";
         await new Program().Run(outFilePath);
     }
 }
