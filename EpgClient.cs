@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -36,7 +37,10 @@ namespace Init7.Epg
             uriBuilder.Query = para.ToString();
 
             var resp = await _httpClient.GetAsync(uriBuilder.Uri);
-            var body = await resp.Content.ReadFromJsonAsync<EpgResultList_low>();
+            var body = await resp.Content.ReadFromJsonAsync<EpgResultList_low>(new JsonSerializerOptions
+            {
+                TypeInfoResolver = SerializationModeOptionsContext.Default
+            });
             if (body is null)
             {
                 throw new InvalidOperationException("EPG fetch failed");
