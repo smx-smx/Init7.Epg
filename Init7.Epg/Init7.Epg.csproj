@@ -8,12 +8,10 @@
 
     <!-- for openwrt -->
     <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="m3uParser.NET" Version="1.0.17" />
   </ItemGroup>
-
 </Project>

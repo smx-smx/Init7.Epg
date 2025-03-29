@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -9,19 +10,19 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace Init7.Epg
+namespace Init7.Epg.Init7
 {
-    public class EpgClient : IDisposable
+    public class Init7EpgClient : IDisposable
     {
         const string API_0 = "https://api.tv.init7.net/api/epg/";
         private readonly HttpClient _httpClient;
 
-        public EpgClient()
+        public Init7EpgClient()
         {
             _httpClient = new HttpClient();
         }
 
-        public async Task<EpgResultList_high> GetEpg(long? offset = null, long? limit = null)
+        public async Task<EpgResultList?> GetEpg(long? offset = null, long? limit = null)
         {
             var para = HttpUtility.ParseQueryString("");
             if (offset != null)
@@ -33,22 +34,22 @@ namespace Init7.Epg
                 para["limit"] = limit.ToString();
             }
 
-            var uriBuilder = new UriBuilder(new Uri(API_0));
+            var uriBuilder = new UriBuilder(API_0);
             uriBuilder.Query = para.ToString();
 
             var resp = await _httpClient.GetAsync(uriBuilder.Uri);
-            var body = await resp.Content.ReadFromJsonAsync<EpgResultList_low>(new JsonSerializerOptions
-            {
-                TypeInfoResolver = SerializationModeOptionsContext.Default
-            });
-            if (body is null)
+            Trace.TraceInformation(uriBuilder.Uri.ToString());
+            var body = await resp.Content.ReadFromJsonAsync(
+                typeof(EpgResultList),
+                SerializationModeOptionsContext.Default) as EpgResultList;
+            if (body == null)
             {
                 throw new InvalidOperationException("EPG fetch failed");
             }
-            return new EpgResultList_high(body);
+            return body;
         }
 
-        public async Task<EpgResultList_high> GetNext(EpgResultList_high curr)
+        public async Task<EpgResultList?> GetNext(EpgResultList curr)
         {
             if (curr.NextUri == null)
             {
@@ -61,7 +62,7 @@ namespace Init7.Epg
             );
         }
 
-        public async Task<EpgResultList_high> GetPrevious(EpgResultList_high curr)
+        public async Task<EpgResultList?> GetPrevious(EpgResultList curr)
         {
             if (curr.PreviousUri == null)
             {

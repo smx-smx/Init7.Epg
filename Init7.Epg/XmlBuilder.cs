@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Xml;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Init7.Epg
 {
@@ -20,6 +21,10 @@ namespace Init7.Epg
 
         protected abstract void FinishAppending();
 
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+            Justification = "Only uses types in the same assembly")]
         public string BuildToString()
         {
             FinishAppending();
@@ -31,6 +36,10 @@ namespace Init7.Epg
             return stringWriter.ToString();
         }
 
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code",
+            Justification = "Only uses types in the same assembly")]
         public void BuildToFile(string filePath)
         {
             FinishAppending();
