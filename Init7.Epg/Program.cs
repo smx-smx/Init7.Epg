@@ -11,7 +11,6 @@ public class Program
 
     private EpgBuilder _epgOut;
 
-    [RequiresUnreferencedCode("XmlSerializer")]
     async Task Run(string outFilePath)
     {
         var providers = new List<IEpgProvider>() {
@@ -67,7 +66,6 @@ public class Program
         _epgOut = new EpgBuilder();
     }
 
-    [RequiresUnreferencedCode("XmlSerializer")]
     public static async Task Main(string[] args)
     {
         var outFilePath = args.ElementAtOrDefault(0) ?? "output.xml.gz";

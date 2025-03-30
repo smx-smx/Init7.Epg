@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Xml;
-using System.Diagnostics.CodeAnalysis;
 #if TARGET_AOT
 using Microsoft.Xml.Serialization.GeneratedAssembly;
 #endif
@@ -51,7 +50,7 @@ namespace Init7.Epg
             var serializer = GetSerializer(_root);
             using var stringWriter = new StringWriter();
             using var xmlWriter = XmlWriter.Create(stringWriter);
-            serializer.Serialize(xmlWriter, _root);
+            serializer.SerializeChecked(xmlWriter, _root);
             return stringWriter.ToString();
         }
         public void BuildToStream(Stream stream)
@@ -65,10 +64,9 @@ namespace Init7.Epg
                 Indent = true
             });
 
-            serializer.Serialize(xmlWriter, _root);
+            serializer.SerializeChecked(xmlWriter, _root);
         }
 
-        [RequiresUnreferencedCode("XmlSerializer")]
         public void BuildToFile(string filePath)
         {
             FinishAppending();

@@ -2,3 +2,15 @@
 
 # CS8981: The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
 dotnet_diagnostic.CS8981.severity = silent
+
+# suppress warnings within generated XmlSerializers
+[*.XmlSerializers.cs]
+dotnet_diagnostic.CS0219.severity = none
+dotnet_diagnostic.CS2019.severity = none
+dotnet_diagnostic.CS8600.severity = none
+dotnet_diagnostic.CS8603.severity = none
+dotnet_diagnostic.CS8618.severity = none
+dotnet_diagnostic.CS8625.severity = none
+dotnet_diagnostic.CS8765.severity = none
+dotnet_diagnostic.IL2026.severity = none
+dotnet_diagnostic.IL2046.severity = none
