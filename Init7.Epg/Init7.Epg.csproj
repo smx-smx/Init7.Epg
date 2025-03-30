@@ -60,7 +60,7 @@
   <!--
   if we're cross compiling, write the .cs in the target's objdir
   -->
-  <ItemGroup Condition="'$(Configuration)' != 'OpenWRT'">
+  <ItemGroup Condition="'$(Configuration)' != 'OpenWRT' and '$(OrigIntermediateOutputPath)' != ''">
     <XmlSerializerArg Include="-o &quot;$(OrigIntermediateOutputPath)&quot;" />
   </ItemGroup>
 
