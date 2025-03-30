@@ -2,8 +2,8 @@
 
 Init7 EPG converter for use with Kodi (XMLTV format)
 
-To build for OpenWRT:
+To build a portable, self-contained, AOT binary for OpenWRT:
 
 ```shell
-dotnet publish -c Release -r linux-musl-arm64 -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=true
+dotnet publish -c OpenWRT
 ```
