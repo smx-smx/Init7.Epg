@@ -55,7 +55,7 @@ namespace Init7.Epg.Teleboy
             var uriBuilder = new UriBuilder("https://tv.api.teleboy.ch/epg/broadcasts");
             uriBuilder.Query = para.ToString();
 
-            Trace.TraceInformation(uriBuilder.Uri.ToString());
+            Console.WriteLine(uriBuilder.Uri.ToString());
             var resp = await _httpClient.GetAsync(uriBuilder.Uri);
             var body = await resp.Content.ReadFromJsonAsync(
                 typeof(TeleboyEpgResponse),

@@ -25,7 +25,9 @@ public class Program
         };
         foreach (var prov in providers)
         {
+            Console.WriteLine($"Initializing: {prov.GetType()}");
             await prov.Initialize();
+            Console.WriteLine($"FillEpg: {prov.GetType()}");
             await prov.FillEpg(_epgOut);
         }
 
@@ -68,8 +70,6 @@ public class Program
     [RequiresUnreferencedCode("XmlSerializer")]
     public static async Task Main(string[] args)
     {
-        Trace.Listeners.Add(new ConsoleTraceListener());
-
         var outFilePath = args.ElementAtOrDefault(0) ?? "output.xml.gz";
         await new Program().Run(outFilePath);
     }

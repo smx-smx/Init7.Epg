@@ -100,7 +100,7 @@ namespace Init7.Epg.Teleboy
                         if (!_channelWarnings.Contains(id))
                         {
                             _channelWarnings.Add(id);
-                            Trace.TraceWarning($"Couldn't find channel \"{id}\", skipping");
+                            Console.WriteLine($"Couldn't find channel \"{id}\", skipping");
                         }
                         continue;
                     }

@@ -21,5 +21,70 @@
 
     <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+
+    <!-- used to select the generated serializers -->
+    <DefineConstants>TARGET_AOT</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'OpenWRT'">
+    <Compile Include="$(IntermediateOutputPath)Init7.Epg.XmlSerializers.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'OpenWRT'">
+    <HostBuildProp Include="Configuration=Release" />
+    <HostBuildProp Include="Platform=AnyCPU" />
+    <HostBuildProp Include="OrigIntermediateOutputPath=$(IntermediateOutputPath)" />
+  </ItemGroup>
+
+  <!--
+  if we're building for OpenWrt, we cannot generate the serializer directly (since we're cross compiling)
+  we need to rebuild for the host architecture (x64)
+  -->
+  <Target Name="InvokeGenerateXmlSerializers" BeforeTargets="CoreCompile" Condition="'$(Configuration)' == 'OpenWRT'">
+    <Message Importance="high" Text="... Building for Host..." />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)$(MSBuildProjectName).csproj" Properties="@(HostBuildProp)" />
+  </Target>
+
+  <!--
+  command line for Microsoft.XmlSerializer.Generator
+  -->
+  <ItemGroup>
+    <XmlSerializerArg Include="dotnet" />
+    <XmlSerializerArg Include="Microsoft.XmlSerializer.Generator" />
+    <XmlSerializerArg Include="&quot;$(IntermediateOutputPath)Init7.Epg.dll&quot;" />
+    <XmlSerializerArg Include="--type Init7.Epg.Schema.tv" />
+    <XmlSerializerArg Include="--force" />
+    <XmlSerializerArg Include="--quiet" />
+  </ItemGroup>
+
+  <!--
+  if we're cross compiling, write the .cs in the target's objdir
+  -->
+  <ItemGroup Condition="'$(Configuration)' != 'OpenWRT'">
+    <XmlSerializerArg Include="-o &quot;$(OrigIntermediateOutputPath)&quot;" />
+  </ItemGroup>
+
+  <!-- 
+  merge command line items by space
+  -->
+  <PropertyGroup>
+    <XmlSerializerCmdLine>@(XmlSerializerArg -> '%(Identity)', ' ')</XmlSerializerCmdLine>
+  </PropertyGroup>
+
+  <!--
+  if we're not cross-compiling, generate the XML serializer
+  -->
+  <Target Name="GenerateXmlSerializers" AfterTargets="CoreCompile" Condition="'$(Configuration)' != 'OpenWRT'">
+    <Message Text="... Generating XML Serializers ..." Importance="high" />
+    <Message Text="$(XmlSerializerCmdLine)" Importance="high" />
+    <Exec Command="$(XmlSerializerCmdLine)" />
+  </Target>
+
+
+  <ItemGroup Condition="'$(Configuration)' != 'OpenWRT'">
+    <PackageReference Include="Microsoft.XmlSerializer.Generator" Version="9.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <DotNetCliToolReference Include="Microsoft.XmlSerializer.Generator" Version="9.0.3" />
+  </ItemGroup>
 </Project>

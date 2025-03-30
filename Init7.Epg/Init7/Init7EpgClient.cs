@@ -38,7 +38,7 @@ namespace Init7.Epg.Init7
             uriBuilder.Query = para.ToString();
 
             var resp = await _httpClient.GetAsync(uriBuilder.Uri);
-            Trace.TraceInformation(uriBuilder.Uri.ToString());
+            Console.WriteLine(uriBuilder.Uri.ToString());
             var body = await resp.Content.ReadFromJsonAsync(
                 typeof(EpgResultList),
                 SerializationModeOptionsContext.Default) as EpgResultList;

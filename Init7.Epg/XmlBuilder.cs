@@ -7,13 +7,19 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Xml;
 using System.Diagnostics.CodeAnalysis;
-using Init7.Epg.Schema;
+#if TARGET_AOT
+using Microsoft.Xml.Serialization.GeneratedAssembly;
+#endif
 
 namespace Init7.Epg
 {
     public abstract class XmlBuilder<T> where T : notnull
     {
         protected readonly T _root;
+
+#if TARGET_AOT
+        private static readonly XmlSerializerContract _serializers = new();
+#endif
 
         public XmlBuilder(T root)
         {
@@ -22,24 +28,37 @@ namespace Init7.Epg
 
         protected abstract void FinishAppending();
 
-        [RequiresUnreferencedCode("XmlSerializer")]
+        private static XmlSerializer GetSerializer(object obj)
+        {
+            /**
+             * in order to build AOT code dealing with XML, we must AOT-generate the XML (de)serializers.
+             * to do this, Microsoft.XmlSerializer.Generator needs a .dll that it can load and reflect on.
+             * this means we need to build 2 versions of the code, in order to break the cycle:
+             * - the AnyCPU (host) version will use the regular JIT-based serializer.
+             * - the AOT version will use the generated serializers.
+             **/
+#if TARGET_AOT
+            return _serializers.GetSerializer(obj.GetType());
+#else
+            return new XmlSerializer(obj.GetType());
+#endif
+        }
+
         public string BuildToString()
         {
             FinishAppending();
 
-            var serializer = new XmlSerializer(_root.GetType());
+            var serializer = GetSerializer(_root);
             using var stringWriter = new StringWriter();
             using var xmlWriter = XmlWriter.Create(stringWriter);
             serializer.Serialize(xmlWriter, _root);
             return stringWriter.ToString();
         }
-
-        [RequiresUnreferencedCode("XmlSerializer")]
         public void BuildToStream(Stream stream)
         {
             FinishAppending();
 
-            var serializer = new XmlSerializer(_root.GetType());
+            var serializer = GetSerializer(_root);
 
             using var xmlWriter = XmlWriter.Create(stream, new XmlWriterSettings
             {
