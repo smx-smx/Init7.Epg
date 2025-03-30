@@ -74,7 +74,7 @@
   <!--
   if we're not cross-compiling, generate the XML serializer
   -->
-  <Target Name="GenerateXmlSerializers" AfterTargets="CoreCompile" Condition="'$(Configuration)' != 'OpenWRT'">
+  <Target Name="GenerateXmlSerializers" AfterTargets="CoreCompile" Condition="'$(Configuration)' != 'OpenWRT' and '$(OrigIntermediateOutputPath)' != ''">
     <Message Text="... Generating XML Serializers ..." Importance="high" />
     <Message Text="$(XmlSerializerCmdLine)" Importance="high" />
     <Exec Command="$(XmlSerializerCmdLine)" />
