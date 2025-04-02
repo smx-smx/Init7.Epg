@@ -148,7 +148,7 @@ namespace Init7.Epg.Teleboy
             return $"{labelConverted}.{countryConverted}";
         }
 
-        [GeneratedRegex(@"[ \!]")]
+        [GeneratedRegex(@"[ \-\!]")]
         private static partial Regex LabelReplace();
     }
 

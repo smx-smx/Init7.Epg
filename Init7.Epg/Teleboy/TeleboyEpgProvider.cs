@@ -42,6 +42,8 @@ namespace Init7.Epg.Teleboy
             { "TV5MondeFBS.fr", "TV5MondeFranceBelgiumSwitzerlandMonaco.fr" },
             { "ArteFr.fr", "arte.fr" },
             { "M6Suisse.fr", "M6Switzerland.ch" },
+            { "CanalAlphaJura.ch", "CanalAlphaJU.ch" },
+            { "CanalAlphaNeuchatel.ch", "CanalAlphaNE.ch" },
             // italian
             { "RTL1025.it", "RTL1025TV.it" },
             { "DMAXItalia.it", "DMAX.it"},
