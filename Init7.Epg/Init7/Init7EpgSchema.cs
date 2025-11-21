@@ -1,16 +1,6 @@
-using Init7.Epg.Init7;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Diagnostics.CodeAnalysis;
-using System.Dynamic;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 
-namespace Init7.Epg
+namespace Init7.Epg.Init7
 {
     public class EpgResultTimeSlot
     {
@@ -59,10 +49,7 @@ namespace Init7.Epg
         public required DateTimeOffset ChangedTimeIso { get; set; }
 
 
-        public string GetChannelId()
-        {
-            return CanonicalName;
-        }
+        public string ChannelId => CanonicalName;
     }
 
     public class EpgResultCredit

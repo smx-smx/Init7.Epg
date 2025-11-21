@@ -1,36 +1,32 @@
 ﻿using Init7.Epg.Schema;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Globalization;
 
 namespace Init7.Epg.Init7
 {
     public class Init7EpgProvider : IEpgProvider, IDisposable
     {
         private readonly Init7EpgClient _client;
+        private bool disposedValue;
 
         public Init7EpgProvider()
         {
             _client = new Init7EpgClient();
         }
 
-        void HandleChunk_Init7(EpgResultList epgIn, EpgBuilder epgOut)
+        static void HandleChunk_Init7(EpgResultList epgIn, EpgBuilder epgOut)
         {
             foreach (var itm in epgIn.Items)
             {
                 var chan_in = itm.Channel;
 
-                var id = chan_in.GetChannelId();
+                var id = chan_in.ChannelId;
                 var chan_out = new channel
                 {
-                    displayname = Constants.DISPLAY_LANGS.Select(lang => new displayname
+                    displayname = [.. Constants.DISPLAYLANGS.Select(lang => new displayname
                     {
                         lang = lang,
                         Value = id
-                    }).ToArray(),
+                    })],
                     icon = [new icon {
                         src = chan_in.LogoUri.AbsoluteUri
                     }],
@@ -41,7 +37,7 @@ namespace Init7.Epg.Init7
 
                 var prg = new programme
                 {
-                    channel = itm.Channel.GetChannelId(),
+                    channel = itm.Channel.ChannelId,
                     title = [new title {
                         lang = itm.Country ?? null,
                         Value = itm.Title
@@ -56,23 +52,23 @@ namespace Init7.Epg.Init7
                         lang = itm.Country ?? null,
                         Value = descr
                     }),
-                    category = itm.Categories.Select(cat => new category
+                    category = [.. itm.Categories.Select(cat => new category
                     {
                         lang = itm.Country ?? null,
                         Value = cat
-                    }).ToArray(),
+                    })],
                     start = CommonConverters.ConvertDateTimeXmlTv(itm.TimeSlot.LowerTimeIso),
                     stop = CommonConverters.ConvertDateTimeXmlTv(itm.TimeSlot.UpperTimeIso),
                     length = new length
                     {
                         units = lengthUnits.seconds,
-                        Value = (itm.TimeSlot.UpperTimeIso - itm.TimeSlot.LowerTimeIso).TotalSeconds.ToString()
+                        Value = (itm.TimeSlot.UpperTimeIso - itm.TimeSlot.LowerTimeIso).TotalSeconds.ToString(CultureInfo.InvariantCulture)
                     },
                     credits = Init7Converters.ConvertCredits(itm.Credits),
-                    icon = itm.Icons.Select(ico => new icon
+                    icon = [.. itm.Icons.Select(ico => new icon
                     {
                         src = ico
-                    }).ToArray(),
+                    })],
                     country = itm.Country?.Split(',')
                         ?.Select(itm => new country
                         {
@@ -94,16 +90,21 @@ namespace Init7.Epg.Init7
 
         public async Task FillEpg(EpgBuilder epgOut)
         {
-            var epgIn = await _client.GetEpg(limit: 2000);
+            ArgumentNullException.ThrowIfNull(epgOut);
+
+            var epgIn = await _client.GetEpg(limit: 2000).ConfigureAwait(false);
+
             if (epgIn == null)
             {
                 return;
             }
 
             HandleChunk_Init7(epgIn, epgOut);
+
             while (epgIn.NextUri != null)
             {
-                epgIn = await _client.GetNext(epgIn);
+                
+                epgIn = await _client.GetNext(epgIn).ConfigureAwait(false);
                 if (epgIn == null) break;
                 HandleChunk_Init7(epgIn, epgOut);
             }
@@ -114,9 +115,23 @@ namespace Init7.Epg.Init7
             return Task.CompletedTask;
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _client.Dispose();
+                }
+                disposedValue = true;
+            }
+        }
+
         public void Dispose()
         {
-            _client.Dispose();
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

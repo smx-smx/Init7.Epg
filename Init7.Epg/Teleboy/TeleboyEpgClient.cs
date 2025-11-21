@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Globalization;
 using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Init7.Epg.Teleboy
@@ -13,6 +7,7 @@ namespace Init7.Epg.Teleboy
     public class TeleboyEpgClient : IDisposable
     {
         private readonly HttpClient _httpClient;
+        private bool disposedValue;
 
         public TeleboyEpgClient()
         {
@@ -22,11 +17,11 @@ namespace Init7.Epg.Teleboy
 
         public async Task<TeleboyGenreApiResponse?> GetGenres()
         {
-            var uriBuilder = new UriBuilder("https://tv.api.teleboy.ch/epg/genres");
-            var resp = await _httpClient.GetAsync(uriBuilder.Uri);
+            var uriBuilder = new UriBuilder(Constants.TELEBOYGENRESAPIURL);
+            var resp = await _httpClient.GetAsync(uriBuilder.Uri).ConfigureAwait(false);
             var body = await resp.Content.ReadFromJsonAsync(
                 typeof(TeleboyGenreApiResponse),
-                SerializationModeOptionsContext.Default) as TeleboyGenreApiResponse;
+                SerializationModeOptionsContext.Default).ConfigureAwait(false) as TeleboyGenreApiResponse;
             return body;
         }
 
@@ -48,24 +43,41 @@ namespace Init7.Epg.Teleboy
             para["expand"] = "station,logos,flags,primary_image";
             if (offset > 0)
             {
-                para["skip"] = offset.ToString();
+                para["skip"] = offset.ToString(CultureInfo.InvariantCulture);
             }
-            para["limit"] = limit.ToString();
+            para["limit"] = limit.ToString(CultureInfo.InvariantCulture);
 
-            var uriBuilder = new UriBuilder("https://tv.api.teleboy.ch/epg/broadcasts");
-            uriBuilder.Query = para.ToString();
+            var uriBuilder = new UriBuilder(Constants.TELEBOYBROADCASTSAPIURL)
+            {
+                Query = para.ToString()
+            };
 
             Console.WriteLine(uriBuilder.Uri.ToString());
-            var resp = await _httpClient.GetAsync(uriBuilder.Uri);
+            var resp = await _httpClient.GetAsync(uriBuilder.Uri).ConfigureAwait(false);
             var body = await resp.Content.ReadFromJsonAsync(
                 typeof(TeleboyEpgResponse),
-                SerializationModeOptionsContext.Default) as TeleboyEpgResponse;
+                SerializationModeOptionsContext.Default).ConfigureAwait(false) as TeleboyEpgResponse;
             return body;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _httpClient.Dispose();
+                }
+
+                disposedValue = true;
+            }
         }
 
         public void Dispose()
         {
-            _httpClient.Dispose();
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

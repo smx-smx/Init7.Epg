@@ -1,11 +1,7 @@
 ﻿using Init7.Epg.Schema;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Init7.Epg.Teleboy
 {
@@ -15,11 +11,12 @@ namespace Init7.Epg.Teleboy
         {
             var str = reader.GetString();
             if (str == null) return null;
-            return DateTimeOffset.Parse(str);
+            return DateTimeOffset.Parse(str, CultureInfo.InvariantCulture);
         }
 
         public override void Write(Utf8JsonWriter writer, DateTimeOffset? value, JsonSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(writer);
             if (value.HasValue)
             {
                 writer.WriteStringValue(TeleboyConverters.ConvertDateTimeApiParameter(value.Value));
@@ -39,6 +36,7 @@ namespace Init7.Epg.Teleboy
 
         public static category[] ConvertGenre(GenreItem genre)
         {
+            ArgumentNullException.ThrowIfNull(genre);
             var res = new List<category>();
             if (!string.IsNullOrEmpty(genre.NameDe))
             {
@@ -72,11 +70,12 @@ namespace Init7.Epg.Teleboy
                     Value = genre.NameEn
                 });
             }
-            return res.ToArray();
+            return [.. res];
         }
 
         public static icon[] ConvertLogos(StationLogos logos)
         {
+            ArgumentNullException.ThrowIfNull(logos);
             var res = new List<icon>();
             do
             {
@@ -84,8 +83,8 @@ namespace Init7.Epg.Teleboy
                 if (logos.Sizes == null) break;
 
                 var tpl = logos.Path
-                    .Replace("[size]", "{0}")
-                    .Replace("[type]", "{1}");
+                    .Replace("[size]", "{0}", StringComparison.OrdinalIgnoreCase)
+                    .Replace("[type]", "{1}", StringComparison.OrdinalIgnoreCase);
 
                 foreach (var type in logos.Types.Values)
                 {
@@ -93,14 +92,14 @@ namespace Init7.Epg.Teleboy
                     {
                         res.Add(new icon
                         {
-                            height = size.ToString(),
-                            width = size.ToString(),
-                            src = string.Format(tpl, size, type)
+                            height = size.ToString(CultureInfo.InvariantCulture),
+                            width = size.ToString(CultureInfo.InvariantCulture),
+                            src = string.Format(CultureInfo.InvariantCulture, tpl, size, type)
                         });
                     }
                 }
             } while (false);
-            return res.ToArray();
+            return [.. res];
         }
     }
 }
