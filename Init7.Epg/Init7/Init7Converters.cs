@@ -1,11 +1,7 @@
 ﻿using Init7.Epg.Schema;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Init7.Epg.Init7
 {
@@ -13,16 +9,13 @@ namespace Init7.Epg.Init7
     {
         public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var str = reader.GetString();
-            if (str == null)
-            {
-                throw new InvalidDataException();
-            }
-            return DateTimeOffset.Parse(str);
+            var str = reader.GetString() ?? throw new InvalidDataException();
+            return DateTimeOffset.Parse(str, CultureInfo.InvariantCulture);
         }
 
         public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(writer);
             writer.WriteStringValue(CommonConverters.ConvertDateTimeXmlTv(value));
         }
     }
@@ -33,11 +26,13 @@ namespace Init7.Epg.Init7
         {
             var str = reader.GetString();
             if (str == null) return null;
-            return DateTimeOffset.Parse(str);
+            return DateTimeOffset.Parse(str, CultureInfo.InvariantCulture);
         }
 
         public override void Write(Utf8JsonWriter writer, DateTimeOffset? value, JsonSerializerOptions options)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (value.HasValue)
             {
                 writer.WriteStringValue(CommonConverters.ConvertDateTimeXmlTv(value.Value));
@@ -49,10 +44,12 @@ namespace Init7.Epg.Init7
         }
     }
 
-    public class Init7Converters
+    public static class Init7Converters
     {
         public static credits ConvertCredits(ICollection<EpgResultCredit> credits)
         {
+            ArgumentNullException.ThrowIfNull(credits);
+
             var ecb = new EpgCreditBuilder();
             foreach (var itm in credits)
             {

@@ -12,18 +12,9 @@ using Microsoft.Xml.Serialization.GeneratedAssembly;
 
 namespace Init7.Epg
 {
-    public abstract class XmlBuilder<T> where T : notnull
+    public abstract class XmlBuilder<T>(T root) where T : notnull
     {
-        protected readonly T _root;
-
-#if TARGET_AOT
-        private static readonly XmlSerializerContract _serializers = new();
-#endif
-
-        public XmlBuilder(T root)
-        {
-            _root = root;
-        }
+        protected readonly T _root = root;
 
         protected abstract void FinishAppending();
 

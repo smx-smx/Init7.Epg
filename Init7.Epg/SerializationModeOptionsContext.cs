@@ -1,4 +1,4 @@
-﻿using Init7.Epg;
+﻿using Init7.Epg.Init7;
 using Init7.Epg.Teleboy;
 using System.Text.Json.Serialization;
 

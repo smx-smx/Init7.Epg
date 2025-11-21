@@ -1,21 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Linq;
-using System.Net.Http;
+using System.Globalization;
 using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Init7.Epg.Init7
 {
     public class Init7EpgClient : IDisposable
     {
-        const string API_0 = "https://api.tv.init7.net/api/epg/";
         private readonly HttpClient _httpClient;
+        private bool disposedValue;
 
         public Init7EpgClient()
         {
@@ -27,22 +19,24 @@ namespace Init7.Epg.Init7
             var para = HttpUtility.ParseQueryString("");
             if (offset != null)
             {
-                para["offset"] = offset.ToString();
+                para["offset"] = offset.Value.ToString(CultureInfo.InvariantCulture);
             }
             if (limit != null)
             {
-                para["limit"] = limit.ToString();
+                para["limit"] = limit.Value.ToString(CultureInfo.InvariantCulture);
             }
 
-            var uriBuilder = new UriBuilder(API_0);
-            uriBuilder.Query = para.ToString();
+            var uriBuilder = new UriBuilder(Constants.INIT7APIURL)
+            {
+                Query = para.ToString()
+            };
 
-            var resp = await _httpClient.GetAsync(uriBuilder.Uri);
+            var resp = await _httpClient.GetAsync(uriBuilder.Uri).ConfigureAwait(false);
             Console.WriteLine(uriBuilder.Uri.ToString());
-            var body = await resp.Content.ReadFromJsonAsync(
+
+            if (await resp.Content.ReadFromJsonAsync(
                 typeof(EpgResultList),
-                SerializationModeOptionsContext.Default) as EpgResultList;
-            if (body == null)
+                SerializationModeOptionsContext.Default).ConfigureAwait(false) is not EpgResultList body)
             {
                 throw new InvalidOperationException("EPG fetch failed");
             }
@@ -51,6 +45,8 @@ namespace Init7.Epg.Init7
 
         public async Task<EpgResultList?> GetNext(EpgResultList curr)
         {
+            ArgumentNullException.ThrowIfNull(curr);
+
             if (curr.NextUri == null)
             {
                 throw new InvalidOperationException("Cannot fetch next EPG data. End of Data");
@@ -59,11 +55,13 @@ namespace Init7.Epg.Init7
             return await GetEpg(
                 qs["offset"]?.Let(Convert.ToInt64),
                 qs["limit"]?.Let(Convert.ToInt64)
-            );
+            ).ConfigureAwait(false);
         }
 
         public async Task<EpgResultList?> GetPrevious(EpgResultList curr)
         {
+            ArgumentNullException.ThrowIfNull(curr);
+
             if (curr.PreviousUri == null)
             {
                 throw new InvalidOperationException("Cannot fetch previous EPG data. End of Data");
@@ -72,12 +70,26 @@ namespace Init7.Epg.Init7
             return await GetEpg(
                 qs["offset"]?.Let(Convert.ToInt64),
                 qs["limit"]?.Let(Convert.ToInt64)
-            );
+            ).ConfigureAwait(false);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _httpClient.Dispose();
+                }
+                disposedValue = true;
+            }
         }
 
         public void Dispose()
         {
-            _httpClient.Dispose();
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

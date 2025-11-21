@@ -1,23 +1,18 @@
 ﻿using Init7.Epg.Schema;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Init7.Epg
 {
     public class EpgCreditBuilder : XmlBuilder<credits>
     {
-        private IList<actor> _actors;
-        private IList<producer> _producers;
-        private IList<director> _directors;
+        private readonly List<actor> _actors;
+        private readonly List<producer> _producers;
+        private readonly List<director> _directors;
 
         public EpgCreditBuilder() : base(new credits())
         {
-            _actors = new List<actor>();
-            _producers = new List<producer>();
-            _directors = new List<director>();
+            _actors = [];
+            _producers = [];
+            _directors = [];
         }
 
         public void AddActor(actor actor)
@@ -37,9 +32,9 @@ namespace Init7.Epg
 
         protected override void FinishAppending()
         {
-            _root.actor = _actors.ToArray();
-            _root.producer = _producers.ToArray();
-            _root.director = _directors.ToArray();
+            _root.actor = [.. _actors];
+            _root.producer = [.. _producers];
+            _root.director = [.. _directors];
         }
     }
 }

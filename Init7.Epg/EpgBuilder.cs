@@ -1,30 +1,14 @@
 ﻿using Init7.Epg.Schema;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Serialization;
 
 namespace Init7.Epg
 {
-    internal class EpgChannel
+    public class EpgChannel(channel channel)
     {
-        private readonly IDictionary<DateTimeOffset, programme> _programs;
+        private readonly IDictionary<DateTimeOffset, programme> _programs = new SortedDictionary<DateTimeOffset, programme>();
 
-        public channel Data { get; private set; }
+        public channel Data { get; private set; } = channel;
         public ICollection<programme> Programs => _programs.Values;
-
-
-        public EpgChannel(channel channel)
-        {
-            _programs = new SortedDictionary<DateTimeOffset, programme>();
-            Data = channel;
-        }
 
         public bool TryAddProgramme(DateTimeOffset start, programme program)
         {
@@ -37,18 +21,20 @@ namespace Init7.Epg
 
     public class EpgBuilder : XmlBuilder<tv>
     {
-        private IDictionary<string, EpgChannel> _channels;
+        private readonly IDictionary<string, EpgChannel> _channels;
 
         public EpgBuilder() : base(new tv())
         {
             _root.generatorinfoname = GetType().Namespace;
-            _root.generatorinfourl = "https://github.com/smx-smx/Init7.Epg";
+            _root.generatorinfourl = "https://notyourbusiness.ch";
             // with case insensitive channel name lookup
             _channels = new Dictionary<string, EpgChannel>(StringComparer.InvariantCultureIgnoreCase);
         }
 
         public bool TryAddProgramme(DateTimeOffset start, programme prg)
         {
+            ArgumentNullException.ThrowIfNull(prg);
+
             if (!_channels.TryGetValue(prg.channel, out var channel))
             {
                 return false;
@@ -58,6 +44,7 @@ namespace Init7.Epg
 
         public bool TryAddChannel(channel channel)
         {
+            ArgumentNullException.ThrowIfNull(channel);
             if (_channels.ContainsKey(channel.id)) return false;
             _channels.Add(channel.id, new EpgChannel(channel));
             return true;
@@ -76,8 +63,8 @@ namespace Init7.Epg
 
         protected override void FinishAppending()
         {
-            _root.channel = _channels.Values.Select(x => x.Data).ToArray();
-            _root.programme = _channels.Values.SelectMany(x => x.Programs).ToArray();
+            _root.channel = [.. _channels.Values.Select(x => x.Data)];
+            _root.programme = [.. _channels.Values.SelectMany(x => x.Programs)];
         }
     }
 }

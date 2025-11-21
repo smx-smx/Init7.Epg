@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Init7.Epg.Teleboy
 {
@@ -24,7 +18,7 @@ namespace Init7.Epg.Teleboy
         public int Total { get; set; }
 
         [JsonPropertyName("items")]
-        public List<ProgramItem> Items { get; set; } = new List<ProgramItem>();
+        public List<ProgramItem> Items { get; set; } = [];
     }
 
     // --- Detailed Station Information ---
@@ -56,10 +50,10 @@ namespace Init7.Epg.Teleboy
     public class StationLogos
     {
         [JsonPropertyName("types")]
-        public Dictionary<string, string> Types { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Types { get; set; } = [];
 
         [JsonPropertyName("sizes")]
-        public Dictionary<string, int> Sizes { get; set; } = new Dictionary<string, int>();
+        public Dictionary<string, int> Sizes { get; set; } = [];
 
         [JsonPropertyName("path")]
         public string? Path { get; set; } // URL template
@@ -334,7 +328,7 @@ namespace Init7.Epg.Teleboy
         public int Total { get; set; }
 
         [JsonPropertyName("items")]
-        public List<GenreItem> Items { get; set; } = new List<GenreItem>();
+        public List<GenreItem> Items { get; set; } = [];
     }
 
     // Represents an item within the "items" array (a main genre)
@@ -342,7 +336,7 @@ namespace Init7.Epg.Teleboy
     {
         // Note: This list might be null if a genre item doesn't have sub_genres
         [JsonPropertyName("sub_genres")]
-        public List<SubGenre> SubGenres { get; set; } = new List<SubGenre>();
+        public List<SubGenre> SubGenres { get; set; } = [];
 
         [JsonPropertyName("name")]
         public required string Name { get; set; }
