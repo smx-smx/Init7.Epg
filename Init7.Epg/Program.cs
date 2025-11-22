@@ -67,7 +67,10 @@ namespace Init7.Epg
 
         public static async Task Main(string[] args)
         {
-            var outFilePath = args.ElementAtOrDefault(0) ?? "output.xml";
+            var path = Environment.GetEnvironmentVariable("TVXML_PATH");
+            var outFilePath = path ?? "output.xml";
+
+            Console.WriteLine($"Writing EPG to: {outFilePath}");
             await new Program().Run(outFilePath).ConfigureAwait(false);
         }
     }
