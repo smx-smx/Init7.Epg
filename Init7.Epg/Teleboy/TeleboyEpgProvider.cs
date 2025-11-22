@@ -18,7 +18,7 @@ namespace Init7.Epg.Teleboy
         private readonly TeleboyEpgClient _client = new();
         private Dictionary<int, GenreItem> _genreMap = [];
         private bool disposedValue;
-        private readonly HashSet<string> _channelWarnings = [];
+        //private readonly HashSet<string> _channelWarnings = [];
 
         /// <summary>
         /// mapping for specific channel names that are called differently
@@ -28,6 +28,69 @@ namespace Init7.Epg.Teleboy
             // swiss
             { "blueZoomde.ch", "BlueZoomD.ch" },
             { "HelvetiaOneTV.ch", "Helvetiaone.ch" },
+            {"24H.es","24Horas.es"},
+            {"3+.ch","3plus.ch"},
+            {"4+.ch","4plus.ch"},
+            {"5+.ch","5Plus.ch"},
+            {"5STAR.en","5STAR.uk"},
+            {"6+.ch","6Plus.ch"},
+            {"6ter.fr","6terSwitzerland.ch"},
+            {"7+/NickCH.ch","7PlusNickSchweiz.ch"},
+            {"ARD-alpha.de","ARDalpha.de"},
+            {"BBC1.uk","BBCOne.uk"},
+            {"BBC2.uk","BBCTwo.uk"},
+            {"BR.de","BRFernsehenSud.de"},
+            {"BoingPlus.it","Boing.it"},
+            {"CNBC.uk","CNBCEurope.uk"},
+            {"CanalAlphaJura.ch","CanalAlphaJU.ch"},
+            {"CanalAlphaNeuchatel.ch","CanalAlphaNE.ch"},
+            {"Chan4.uk","Channel4.uk"},
+            {"DWen.de","DWEnglish.de"},
+            {"E4Extra.en","E4.uk"},
+            {"EuNews-e.uk","EuronewsEnglish.fr"},
+            {"EuNews-f.fr","EuronewsFrench.fr"},
+            {"EuNews-i.fr","EuronewsItalian.fr"},
+            {"EuNews.de","EuronewsGerman.fr"},
+            {"EuSp.de","Eurosport1.de"},
+            {"FashionTV.fr","FashionTVEurope.fr"},
+            {"Fr2.fr","France2.fr"},
+            {"Fr24.fr","France24French.fr"},
+            {"Fr3.fr","France3.fr"},
+            {"Fr4.fr","France4.fr"},
+            {"Fr5.fr","France5.fr"},
+            {"France24[en].uk","France24English.fr"},
+            {"Kabel1Doku.de","kabeleinsDoku.de"},
+            {"Kabel1ch.de","kabeleinsSchweiz.ch"},
+            {"Kanal7Avrupa.tr","Kanal7.tr"},
+            {"MDR.de","MDRFernsehenSachsen.de"},
+            {"RTL2ch.de","RTLZwei.de"},
+            {"RTLch.de","RTL.de"},
+            {"S-RTLch.de","RTLSuper.de"},
+            {"SRF2.ch","SRFzwei.ch"},
+            {"SRFi.ch","SRFinfo.ch"},
+            {"SWR-BW.de","SWRFernsehenBadenWurttemberg.de"},
+            {"Sat.1Gold.de","SAT1Gold.de"},
+            {"Sat.1ch.de","SAT1.de"},
+            {"ServusTvAustria.at","ServusTV.at"},
+            {"SkyNews.uk","SkyNewsInternational.uk"},
+            {"Sport1Plus.ch","Sport1.de"},
+            {"SportitaliaHD.it","Sportitalia.it"},
+            {"TBasel.ch","Telebasel.ch"},
+            {"TBärn.ch","TeleBarn.ch"},
+            {"TLCGermany.de","TLC.de"},
+            {"TV5.fr","TV5MondeFranceBelgiumSwitzerlandMonaco.fr"},
+            {"TZüri.ch","TeleZuri.ch"},
+            {"VOXch.de","VOX.de"},
+            {"W9.fr","W9Switzerland.ch"},
+            {"WDR.de","WDRFernsehenKoln.de"},
+            {"WetterTV.ch","WettercomTV.de"},
+            {"ZDF-Info.de","ZDFinfo.de"},
+            {"n-tv.de","ntv.de"},
+            {"rbbBerlin.de","rbbFernsehenBerlin.de"},
+            {"auftanken.tv.ch","AuftankenTV.ch"},
+            {"Pro7ch.de","ProSiebenSchweiz.ch"},
+            {"RaiSport1.it","RaiSportHD.it"},
+            {"RTP3.pt","RTPInternacional.pt"},
             // german
             { "Pro7Maxx.de", "ProSiebenMaxx.de" },
             // french
@@ -92,10 +155,10 @@ namespace Init7.Epg.Teleboy
                     }
                     else
                     {
-                        if (!_channelWarnings.Add(id))
-                        {
-                            Console.WriteLine($"Couldn't find channel \"{id}\", skipping");
-                        }
+                        //if (!_channelWarnings.Add(id))
+                        //{
+                        //    Console.WriteLine($"Couldn't find channel \"{id}\", skipping");
+                        //}
                         continue;
                     }
                 }
