@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Init7.Epg.Teleboy
@@ -17,6 +18,7 @@ namespace Init7.Epg.Teleboy
         /// Only add data for existing channels (from Init7) in the EPG map
         /// </summary>
         public bool AppendOnlyMode { get; set; } = false;
+        public Dictionary<string, string>? ChannelMappings { get; set; }
     }
 
     public class TeleboyEpgProvider : IEpgProvider, IDisposable
@@ -192,6 +194,14 @@ namespace Init7.Epg.Teleboy
             _config = config;
             _client = new TeleboyEpgClient();
             _genreMap = new Dictionary<int, GenreItem>();
+            if (config.ChannelMappings != null)
+            {
+                _teleboyToInit7.Clear();
+                foreach (var mapping in config.ChannelMappings)
+                {
+                    _teleboyToInit7.Add(mapping.Key, mapping.Value);
+                }
+            }
         }
 
         public async Task Initialize()

@@ -5,21 +5,32 @@ using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
+using System.Reflection;
+using System.Text.Json;
 
 public class Program
 {
 
     private EpgBuilder _epgOut;
 
-    async Task Run(string outFilePath)
+    async Task Run(string configPath, string outFilePath)
     {
+        ConfigurationSchema? schema = null;
+        if(File.Exists(configPath))
+        {
+            Console.WriteLine($"Using config file: {configPath}");
+            using var configFile = new FileStream(configPath, FileMode.Open, FileAccess.Read);
+            schema = JsonSerializer.Deserialize(configFile, SerializationModeOptionsContext.Default.ConfigurationSchema);
+        }
+
         var providers = new List<IEpgProvider>() {
             new Init7EpgProvider(),
             new TeleboyEpgProvider(new TeleboyEpgProviderConfig
             {
                 TimeSpanBackwards = TimeSpan.FromHours(6),
                 TimeSpanForward = TimeSpan.FromDays(2),
-                AppendOnlyMode = true
+                AppendOnlyMode = true,
+                ChannelMappings = schema?.TeleboyMappings
             })
         };
         foreach (var prov in providers)
@@ -68,8 +79,9 @@ public class Program
 
     public static async Task Main(string[] args)
     {
+        var configPath = Path.Combine(AppContext.BaseDirectory, "config.json"); ;
         var outFilePath = args.ElementAtOrDefault(0) ?? "output.xml.gz";
-        await new Program().Run(outFilePath);
+        await new Program().Run(configPath, outFilePath);
     }
 }
 
