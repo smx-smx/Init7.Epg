@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Init7.Epg": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
