@@ -17,11 +17,26 @@ namespace Init7.Epg.Init7
     {
         private readonly Init7EpgConfig _config;
         private readonly Init7EpgClient _client;
+        private readonly HashSet<string> _channels;
 
         public Init7EpgProvider(Init7EpgConfig config)
         {
             _config = config;
             _client = new Init7EpgClient();
+            _channels = new HashSet<string>();
+        }
+
+        private async Task DumpChannelListAsync(string filePath)
+        {
+            using var fh = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            fh.SetLength(0);
+
+            using var writer = new StreamWriter(fh, new UTF8Encoding(false));
+
+            foreach (var ch in _channels.Order())
+            {
+                await writer.WriteLineAsync(ch);
+            }
         }
 
         void HandleChunk_Init7(EpgResultList epgIn, EpgBuilder epgOut)
@@ -31,6 +46,8 @@ namespace Init7.Epg.Init7
                 var chan_in = itm.Channel;
 
                 var id = chan_in.GetChannelId();
+                _channels.Add(id);
+
                 var chan_out = new channel
                 {
                     displayname = Constants.DISPLAY_LANGS.Select(lang => new displayname
@@ -114,6 +131,8 @@ namespace Init7.Epg.Init7
                 if (epgIn == null) break;
                 HandleChunk_Init7(epgIn, epgOut);
             }
+
+            await DumpChannelListAsync("channels_init7.txt");
         }
 
         public Task Initialize()

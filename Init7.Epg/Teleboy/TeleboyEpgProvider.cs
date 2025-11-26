@@ -37,6 +37,8 @@ namespace Init7.Epg.Teleboy
         {
         };
 
+        private readonly HashSet<string> _teleboyChannels = new HashSet<string>();
+
         (DateTimeOffset, DateTimeOffset) HandleChunk_Teleboy(
             TeleboyEpgResponse epgIn,
             EpgBuilder epgOut)
@@ -53,8 +55,15 @@ namespace Init7.Epg.Teleboy
                 var station = itm.Station;
                 if (station == null) continue;
 
-                var id = station.GetChannelId();
+                {
+                    var label = station.Label;
+                    if(label != null)
+                    {
+                        _teleboyChannels.Add(label);
+                    }
+                }
 
+                var id = station.GetChannelId();
                 var chan_out = new channel
                 {
                     displayname = Constants.DISPLAY_LANGS.Select(lang => new displayname
@@ -200,12 +209,27 @@ namespace Init7.Epg.Teleboy
             }
         }
 
+        private async Task DumpChannelListAsync(string filePath)
+        {
+            using var fh = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            fh.SetLength(0);
+
+            using var writer = new StreamWriter(fh, new UTF8Encoding(false));
+
+            foreach (var ch in _teleboyChannels.Order())
+            {
+                await writer.WriteLineAsync(ch);
+            }
+        }
+
         public async Task FillEpg(EpgBuilder epgOut)
         {
             var referenceTime = DateTimeOffset.Now;
             var boundHigh = referenceTime.Add(_config.TimeSpanForward);
             var boundLow = referenceTime.Subtract(_config.TimeSpanBackwards);
             await GetTeleboyEpg(epgOut, boundLow, boundHigh);
+            await DumpChannelListAsync("channels_teleboy.txt");
+
         }
 
         public void Dispose()

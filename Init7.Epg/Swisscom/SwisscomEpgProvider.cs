@@ -403,6 +403,19 @@ namespace Init7.Epg.Swisscom
             await GetSwisscomEpg(epgOut, boundLow, boundHigh);
         }
 
+        private async Task DumpChannelListAsync(string filePath)
+        {
+            using var fh = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            fh.SetLength(0);
+
+            using var writer = new StreamWriter(fh, new UTF8Encoding(false));
+
+            foreach (var ch in _channels.Values.OrderBy(x => Convert.ToInt32(x.Identifier))) 
+            {
+                await writer.WriteLineAsync($"{ch.Identifier}: {ch.Title}");
+            }
+        }
+
         public async Task Initialize()
         {
             _channels.Clear();
@@ -412,6 +425,7 @@ namespace Init7.Epg.Swisscom
             {
                 _channels[channel.Identifier] = channel;
             }
+            await DumpChannelListAsync("channels_swisscom.txt");
 
             var newGenres = await _client.GetGenres();
             if (newGenres != null)
