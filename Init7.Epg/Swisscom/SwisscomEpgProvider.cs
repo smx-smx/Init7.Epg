@@ -19,6 +19,7 @@ namespace Init7.Epg.Swisscom
         public Dictionary<string, string>? ChannelMappings { get; set; }
         public bool StandaloneMode { get; set; } = false;
         public bool OnlyMapped { get; set; } = false;
+        public SwisscomEpgLanguage Language { get; set; } = SwisscomEpgLanguage.English;
     }
 
     public class SwisscomEpgProvider : IEpgProvider, IDisposable

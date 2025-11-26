@@ -123,6 +123,7 @@
       "fetch_forward": "2:00:00",
       "standalone": false
     },
+    "language": "en",
     "mappings": {
       "3": "2M.ma",
       "4": "3plus.ch",

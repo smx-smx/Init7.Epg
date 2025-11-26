@@ -32,6 +32,13 @@ public class Program
             schema?.Swisscom?.ProviderConfig?.Enabled ?? true
                 ? new SwisscomEpgProvider(new SwisscomEpgConfig
                 {
+                    Language = (schema?.Swisscom?.Language?.ToLowerInvariant() ?? "en") switch
+                    {
+                        "de" => SwisscomEpgLanguage.German,
+                        "it" => SwisscomEpgLanguage.Italian,
+                        "fr" => SwisscomEpgLanguage.French,
+                        _ => SwisscomEpgLanguage.English
+                    },
                     TimeSpanBackwards = schema?.Swisscom?.ProviderConfig?.FetchBack ?? TimeSpan.FromHours(6),
                     TimeSpanForward = schema?.Swisscom?.ProviderConfig?.FetchForward ?? TimeSpan.FromDays(2),
                     ChannelMappings = schema?.Swisscom?.Mappings,
