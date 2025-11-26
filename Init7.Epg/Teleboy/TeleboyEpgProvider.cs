@@ -17,7 +17,7 @@ namespace Init7.Epg.Teleboy
         /// <summary>
         /// Only add data for existing channels (from Init7) in the EPG map
         /// </summary>
-        public bool AppendOnlyMode { get; set; } = false;
+        public bool StandaloneMode { get; set; } = false;
         public Dictionary<string, string>? ChannelMappings { get; set; }
     }
 
@@ -28,30 +28,13 @@ namespace Init7.Epg.Teleboy
         private TeleboyGenreApiResponse? _genres;
         private IDictionary<int, GenreItem> _genreMap;
 
-        private HashSet<string> _channelWarnings = new HashSet<string>();
+        private readonly HashSet<string> _channelWarnings = new HashSet<string>();
 
         /// <summary>
         /// mapping for specific channel names that are called differently
         /// </summary>
         private static readonly Dictionary<string, string> _teleboyToInit7 = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
-            // swiss
-            { "blueZoomde.ch", "BlueZoomD.ch" },
-            { "HelvetiaOneTV.ch", "Helvetiaone.ch" },
-            // german
-            { "Pro7Maxx.de", "ProSiebenMaxx.de" },
-            // french
-            { "TV5MondeFBS.fr", "TV5MondeFranceBelgiumSwitzerlandMonaco.fr" },
-            { "ArteFr.fr", "arte.fr" },
-            { "M6Suisse.fr", "M6Switzerland.ch" },
-            { "CanalAlphaJura.ch", "CanalAlphaJU.ch" },
-            { "CanalAlphaNeuchatel.ch", "CanalAlphaNE.ch" },
-            // italian
-            { "RTL1025.it", "RTL1025TV.it" },
-            { "DMAXItalia.it", "DMAX.it"},
-            { "WarnerTVItaly.it", "WarnerTv.it" },
-            // portuguese
-            { "RTPi.pt", "RTPInternacional.pt" },
         };
 
         (DateTimeOffset, DateTimeOffset) HandleChunk_Teleboy(
@@ -71,6 +54,7 @@ namespace Init7.Epg.Teleboy
                 if (station == null) continue;
 
                 var id = station.GetChannelId();
+
                 var chan_out = new channel
                 {
                     displayname = Constants.DISPLAY_LANGS.Select(lang => new displayname
@@ -81,7 +65,7 @@ namespace Init7.Epg.Teleboy
                     icon = TeleboyConverters.ConvertLogos(itm.Station?.Logos ?? new StationLogos()),
                     id = id,
                 };
-                if (!_config.AppendOnlyMode)
+                if (_config.StandaloneMode)
                 {
                     // if we're not in append only mode, we add any channel we see
                     epgOut.TryAddChannel(chan_out);

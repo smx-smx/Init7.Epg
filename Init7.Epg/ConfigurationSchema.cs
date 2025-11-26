@@ -7,9 +7,47 @@ using System.Threading.Tasks;
 
 namespace Init7.Epg
 {
+    public class EpgProviderConfig
+    {
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+        [JsonPropertyName("fetch_back")]
+        public TimeSpan? FetchBack { get; set; }
+        [JsonPropertyName("fetch_forward")]
+        public TimeSpan? FetchForward { get; set; }
+        [JsonPropertyName("standalone")]
+        public bool StandaloneMode { get; set; }
+    }
+
+    public class Init7ConfigurationSchema
+    {
+        [JsonPropertyName("common")]
+        public EpgProviderConfig? ProviderConfig { get; set; }
+    }
+
+    public class TeleboyConfigurationSchema
+    {
+        [JsonPropertyName("common")]
+        public EpgProviderConfig? ProviderConfig { get; set; }
+        [JsonPropertyName("mappings")]
+        public Dictionary<string, string> Mappings { get; set; } = new Dictionary<string, string>();
+    }
+
+    public class SwisscomConfigurationSchema
+    {
+        [JsonPropertyName("common")]
+        public EpgProviderConfig? ProviderConfig { get; set; }
+        [JsonPropertyName("mappings")]
+        public Dictionary<string, string> Mappings { get; set; } = new Dictionary<string, string>();
+    }
+
     public class ConfigurationSchema
     {
-        [JsonPropertyName("teleboy_mappings")]
-        public Dictionary<string, string> TeleboyMappings { get; set; } = new Dictionary<string, string>();
+        [JsonPropertyName("init7")]
+        public Init7ConfigurationSchema? Init7 { get; set; }
+        [JsonPropertyName("teleboy")]
+        public TeleboyConfigurationSchema? Teleboy { get; set; }
+        [JsonPropertyName("swisscom")]
+        public SwisscomConfigurationSchema? Swisscom { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Init7.Epg;
 using Init7.Epg.Init7;
+using Init7.Epg.Swisscom;
 using Init7.Epg.Teleboy;
 using System.Data;
 using System.Diagnostics;
@@ -16,23 +17,39 @@ public class Program
     async Task Run(string configPath, string outFilePath)
     {
         ConfigurationSchema? schema = null;
-        if(File.Exists(configPath))
+        if (File.Exists(configPath))
         {
             Console.WriteLine($"Using config file: {configPath}");
             using var configFile = new FileStream(configPath, FileMode.Open, FileAccess.Read);
             schema = JsonSerializer.Deserialize(configFile, SerializationModeOptionsContext.Default.ConfigurationSchema);
         }
 
-        var providers = new List<IEpgProvider>() {
-            new Init7EpgProvider(),
-            new TeleboyEpgProvider(new TeleboyEpgProviderConfig
-            {
-                TimeSpanBackwards = TimeSpan.FromHours(6),
-                TimeSpanForward = TimeSpan.FromDays(2),
-                AppendOnlyMode = true,
-                ChannelMappings = schema?.TeleboyMappings
-            })
-        };
+        var providers = new List<IEpgProvider?>() {
+            schema?.Init7?.ProviderConfig?.Enabled ?? true
+                ? new Init7EpgProvider(new Init7EpgConfig
+                {
+                }) : null,
+            schema?.Swisscom?.ProviderConfig?.Enabled ?? true
+                ? new SwisscomEpgProvider(new SwisscomEpgConfig
+                {
+                    TimeSpanBackwards = schema?.Swisscom?.ProviderConfig?.FetchBack ?? TimeSpan.FromHours(6),
+                    TimeSpanForward = schema?.Swisscom?.ProviderConfig?.FetchForward ?? TimeSpan.FromDays(2),
+                    ChannelMappings = schema?.Swisscom?.Mappings,
+                    // used for testing to ignore Init7 relationship
+                    StandaloneMode = schema?.Swisscom?.ProviderConfig?.StandaloneMode ?? false,
+                    // fetch EPG only for mapped channels
+                    OnlyMapped = true
+                }) : null,
+            schema?.Teleboy?.ProviderConfig?.Enabled ?? true
+                ? new TeleboyEpgProvider(new TeleboyEpgProviderConfig
+                {
+                    TimeSpanBackwards = schema?.Teleboy?.ProviderConfig?.FetchBack ?? TimeSpan.FromHours(6),
+                    TimeSpanForward = schema?.Teleboy?.ProviderConfig?.FetchForward ?? TimeSpan.FromDays(2),
+                    // used for testing to ignore Init7 relationship
+                    StandaloneMode = schema?.Teleboy?.ProviderConfig?.StandaloneMode ?? false,
+                    ChannelMappings = schema?.Teleboy?.Mappings
+                }) : null
+        }.Where(x => x is not null).Cast<IEpgProvider>();
         foreach (var prov in providers)
         {
             Console.WriteLine($"Initializing: {prov.GetType()}");

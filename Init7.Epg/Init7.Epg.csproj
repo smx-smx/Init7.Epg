@@ -84,9 +84,11 @@
   <ItemGroup Condition="'$(Configuration)' != 'OpenWRT'">
     <PackageReference Include="Microsoft.XmlSerializer.Generator" Version="9.0.3" />
   </ItemGroup>
+
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.XmlSerializer.Generator" Version="9.0.3" />
   </ItemGroup>
+
   <ItemGroup>
     <None Update="config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

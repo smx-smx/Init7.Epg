@@ -8,12 +8,19 @@ using System.Threading.Tasks;
 
 namespace Init7.Epg.Init7
 {
+    public class Init7EpgConfig
+    {
+        public int FetchLimit { get; set; } = 2000;
+    }
+
     public class Init7EpgProvider : IEpgProvider, IDisposable
     {
+        private readonly Init7EpgConfig _config;
         private readonly Init7EpgClient _client;
 
-        public Init7EpgProvider()
+        public Init7EpgProvider(Init7EpgConfig config)
         {
+            _config = config;
             _client = new Init7EpgClient();
         }
 
@@ -94,7 +101,7 @@ namespace Init7.Epg.Init7
 
         public async Task FillEpg(EpgBuilder epgOut)
         {
-            var epgIn = await _client.GetEpg(limit: 2000);
+            var epgIn = await _client.GetEpg(limit: _config.FetchLimit);
             if (epgIn == null)
             {
                 return;

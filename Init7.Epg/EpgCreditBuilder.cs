@@ -9,15 +9,17 @@ namespace Init7.Epg
 {
     public class EpgCreditBuilder : XmlBuilder<credits>
     {
-        private IList<actor> _actors;
-        private IList<producer> _producers;
-        private IList<director> _directors;
+        private readonly IList<actor> _actors;
+        private readonly IList<producer> _producers;
+        private readonly IList<director> _directors;
+        private readonly IList<guest> _guests;
 
         public EpgCreditBuilder() : base(new credits())
         {
             _actors = new List<actor>();
             _producers = new List<producer>();
             _directors = new List<director>();
+            _guests = new List<guest>();
         }
 
         public void AddActor(actor actor)
@@ -35,11 +37,17 @@ namespace Init7.Epg
             _directors.Add(director);
         }
 
+        public void AddGuest(guest guest)
+        {
+            _guests.Add(guest);
+        }
+
         protected override void FinishAppending()
         {
             _root.actor = _actors.ToArray();
             _root.producer = _producers.ToArray();
             _root.director = _directors.ToArray();
+            _root.guest = _guests.ToArray();
         }
     }
 }
