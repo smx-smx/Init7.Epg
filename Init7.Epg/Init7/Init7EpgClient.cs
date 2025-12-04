@@ -19,7 +19,7 @@ namespace Init7.Epg.Init7
 
         public Init7EpgClient()
         {
-            _httpClient = new HttpClient();
+            _httpClient = new HttpClient(new RequestLoggingHandler<Init7EpgClient>());
         }
 
         public async Task<EpgResultList?> GetEpg(long? offset = null, long? limit = null)
@@ -38,7 +38,6 @@ namespace Init7.Epg.Init7
             uriBuilder.Query = para.ToString();
 
             var resp = await _httpClient.GetAsync(uriBuilder.Uri);
-            Console.WriteLine(uriBuilder.Uri.ToString());
             var body = await resp.Content.ReadFromJsonAsync(
                 typeof(EpgResultList),
                 SerializationModeOptionsContext.Default) as EpgResultList;

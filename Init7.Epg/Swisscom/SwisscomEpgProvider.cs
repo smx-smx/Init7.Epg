@@ -1,14 +1,7 @@
 ﻿using Init7.Epg.Schema;
-using Init7.Epg.Swisscom.Catalog;
-using Init7.Epg.Swisscom.Channels;
-using System;
-using System.Collections.Generic;
+using Init7.Epg.Swisscom.Schema;
 using System.Data;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace Init7.Epg.Swisscom
 {
@@ -32,7 +25,8 @@ namespace Init7.Epg.Swisscom
         private readonly SwisscomEpgConfig _config;
         private readonly Dictionary<string, Channel> _channels;
         private readonly HashSet<string> _channelWarnings = new HashSet<string>();
-        private readonly Dictionary<string, DescriptionInfo> _genres = new Dictionary<string, DescriptionInfo>();
+        private readonly Dictionary<string, DescriptionInfo> _genres = new Dictionary<string, DescriptionInfo>(StringComparer.InvariantCulture);
+        private readonly Dictionary<string, SeriesResponse> _seriesInfo = new Dictionary<string, SeriesResponse>(StringComparer.InvariantCulture);
 
         public void Dispose()
         {
@@ -48,21 +42,6 @@ namespace Init7.Epg.Swisscom
 
         private bool _formatCheck = false;
 
-        private static readonly List<string> IMAGE_ROLES_POSTER = new List<string>
-        {
-            // -> "BannerL1_Lane"
-            "Lane",
-            // -> "Landscape"
-            "Iconic",
-            "Stage", "Landscape", "Title"
-        };
-        private static readonly List<string> IMAGE_ROLES_BACKDROP = new List<string>
-        {
-            // -> "Backdrop_Stage"
-            "Stage",
-            "Landscape"
-        };
-
         private const string IMAGES_URL = "https://services.sg101.prd.sctv.ch/content/images";
 
         private static string BuildImageUri(string contentPath, imageSize size)
@@ -77,39 +56,29 @@ namespace Init7.Epg.Swisscom
             return $"{IMAGES_URL}/{contentPath}_w{sizeSpec}.webp";
         }
 
-        private string? GetAudio(TvNode node)
+        private static string? GetAudio(TvBroadcast node)
         {
-            if(node.TechnicalAttributes?.DolbySurround ?? false)
+            if (node.TechnicalAttributes?.DolbySurround ?? false)
             {
                 return "surround";
             }
-            if(node.TechnicalAttributes?.Stereo ?? false)
+            if (node.TechnicalAttributes?.Stereo ?? false)
             {
                 return "stereo";
             }
             return null;
         }
 
-        private credits GetCredits(TvNode node)
+        private static credits GetCredits(TvBroadcast node)
         {
             var ecb = new EpgCreditBuilder();
 
-            var participants = from n in node.Relations ?? Enumerable.Empty<Relation>()
-                               where n.Domain == "Universal"
-                                  && n.Kind == "Participant"
-                               select n;
-
-            foreach(var dude in participants)
+            foreach (var dude in node.GetRelations<UniversalParticipant>())
             {
                 var target = dude.TargetNode;
-                if (target == null) continue;
-                if (target.Domain != "Universal") continue;
-                if (target.Kind != "Participant") continue;
-                if (target.Content == null || target.Content.Description == null) continue;
-
                 var descr = target.Content!.Description!;
 
-                switch (dude.Role)
+                switch (dude.Relation.Role)
                 {
                     case "Director":
                         ecb.AddDirector(new director
@@ -136,13 +105,11 @@ namespace Init7.Epg.Swisscom
 
         }
 
-        private IEnumerable<image> GetImages(TvNode node, imageType type)
+        private static IEnumerable<image> GetImages(TvBroadcast node, imageType type)
         {
-            var images = from n in node.Nodes?.Items ?? Enumerable.Empty<TvNode>()
-                         where n.Domain == "TV"
-                             && n.Kind == "Image"
-                             && n.Role is not null
-                             && n.ContentPath is not null
+            var images = from n in node.Nodes?.GetNodes<Image>() ?? Enumerable.Empty<Image>()
+                         where n.Role is not null
+                            && n.ContentPath is not null
                          select n;
 
             if (type == imageType.poster)
@@ -160,9 +127,9 @@ namespace Init7.Epg.Swisscom
                     };
             }
 
-            if(type == imageType.backdrop)
+            if (type == imageType.backdrop)
             {
-                return 
+                return
                     from n in images
                     where n.Shape == "Backdrop"
                        || n.Shape == "Iconic"
@@ -176,7 +143,7 @@ namespace Init7.Epg.Swisscom
                     };
             }
 
-            if(type == imageType.character)
+            if (type == imageType.character)
             {
                 return
                    from n in images
@@ -189,14 +156,14 @@ namespace Init7.Epg.Swisscom
                        Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
                    };
             }
-            
+
             // $TODO: fallback?
             return Enumerable.Empty<image>();
         }
 
-        void HandleChunk(TvResponse resp, EpgBuilder epgOut)
+        async Task HandleChunk(TvResponse resp, EpgBuilder epgOut)
         {
-            if(!_formatCheck)
+            if (!_formatCheck)
             {
                 if (resp.Status.Version != FORMAT_VERSION)
                 {
@@ -205,28 +172,29 @@ namespace Init7.Epg.Swisscom
                 _formatCheck = true;
             }
 
-            if(resp.Status.Status != "OK")
+            if (resp.Status.Status != "OK")
             {
                 throw new InvalidDataException($"Status \"{resp.Status.Status}\" != \"OK\"");
             }
 
-            foreach(var item in resp.Nodes.Items.Where(x => x.Domain == "TV" && x.Kind == "Channel"))
+            foreach (var item in resp.Nodes.GetNodes<TvChannel>().Where(x => x.Identifier != null))
             {
-                var channelId = item.Identifier;
+                var origChannelId = item.Identifier!;
+                var channelId = origChannelId;
                 var mappingAvailable = false;
 
-                if (!_config.StandaloneMode && !_swisscomToInit7.TryGetValue(item.Identifier, out channelId))
+                if (!_config.StandaloneMode && !_swisscomToInit7.TryGetValue(origChannelId, out channelId))
                 {
-                    if (!(mappingAvailable=_channelWarnings.Contains(item.Identifier)))
+                    if (!(mappingAvailable = _channelWarnings.Contains(origChannelId)))
                     {
-                        _channelWarnings.Add(item.Identifier);
-                        Console.Error.WriteLine($"Couldn't find channel \"{item.Identifier}\", skipping");
+                        _channelWarnings.Add(origChannelId);
+                        Console.Error.WriteLine($"Couldn't find channel \"{origChannelId}\", skipping");
                     }
                     continue;
                 }
-                if(!_channels.TryGetValue(item.Identifier, out var chanData))
+                if (!_channels.TryGetValue(origChannelId, out var chanData))
                 {
-                    Console.Error.WriteLine($"Channel data not found for {item.Identifier}, skipping");
+                    Console.Error.WriteLine($"Channel data not found for {origChannelId}, skipping");
                     continue;
                 }
 
@@ -241,11 +209,11 @@ namespace Init7.Epg.Swisscom
                     }),
                     id = channelId,
                 };
-                
-                if(epgOut.TryGetChannel(channelId, out var existing))
+
+                if (epgOut.TryGetChannel(channelId, out var existing))
                 {
                     chan_out.id = existing.id;
-                } else if(mappingAvailable)
+                } else if (mappingAvailable)
                 {
                     Console.Error.WriteLine($"incorrect/expired mapping for {item.Identifier}");
                 }
@@ -256,19 +224,20 @@ namespace Init7.Epg.Swisscom
                 }
 
 
-                var broadcasts = from i in item.Content?.Nodes?.Items ?? Enumerable.Empty<TvNode>()
-                                 where i.Domain == "TV"
-                                    && i.Kind == "Broadcast"
-                                    && i.Content != null
-                                 select i;
-
-
-                foreach (var bcast in broadcasts)
+                foreach (TvBroadcast bcast in item.Content?.Nodes?.GetNodes<TvBroadcast>() ?? Enumerable.Empty<TvBroadcast>())
                 {
                     var content = bcast.Content!;
                     var availability = bcast.Availabilities?.FirstOrDefault();
                     if (availability == null
                         || availability.AvailabilityStart == null) continue;
+
+                    var seriesId = bcast.Content?.Series?.GlobalSeriesIdentifier ?? bcast.Series?.GlobalSeriesIdentifier;
+                    SeriesResponse? seriesInfo = null;
+                    if (seriesId != null && !_seriesInfo.TryGetValue(seriesId, out seriesInfo))
+                    {
+                        seriesInfo = await _client.GetSeriesInfo(seriesId);
+                        _seriesInfo[seriesId] = seriesInfo;
+                    }
 
                     var prg = new programme
                     {
@@ -340,10 +309,10 @@ namespace Init7.Epg.Swisscom
                         stop = CommonConverters.ConvertNullable(
                             availability.AvailabilityEnd,
                             value => CommonConverters.ConvertDateTimeXmlTv(value!.Value)),
-                        category = bcast.Relations?.Where(x => x.Domain == "TV" && x.Kind == "Genre" && x.Role == "Genre" && x.TargetIdentifier != null)
+                        category = bcast.GetRelations<TvGenre>()?.Where(x => x.Relation.TargetIdentifier != null)
                             .Select(x =>
                             {
-                                if (_genres.TryGetValue(x.TargetIdentifier!, out var genre)) return genre;
+                                if (_genres.TryGetValue(x.Relation.TargetIdentifier!, out var genre)) return genre;
                                 return null;
                             }).Where(x => x != null && x.Title != null && x.Language != null).Select(x => new category
                             {
@@ -352,16 +321,33 @@ namespace Init7.Epg.Swisscom
                             }).ToArray(),
                         episodenum = CommonConverters.ConvertSingleNullable(
                             bcast.Series,
-                            value => new episodenum
+                            value =>
                             {
+                                var seasonInfo = seriesInfo
+                                    ?.Results
+                                    ?.FirstOrDefault(series => series.Identifier == value.GlobalSeriesIdentifier)
+                                    ?.Children
+                                    ?.FirstOrDefault(x => x?.Series?.Season == value.Season);
 
-                                // <series>.<episode>[/totalEpisodes].<part>/<totalParts>
-                                // $TODO: get totalEpisodes using `GlobalSeriesIdentifier`
-                                Value = ""
-                                    + (value.Season ?? 0) + "."
-                                    + (value.Episode ?? 0) + "."
-                                    + (value.Part ?? 0) + "/"
-                                    + (value.PartsCount ?? 1)
+                                /*
+                                var episodeInfo = seasonInfo
+                                    ?.Children
+                                    ?.FirstOrDefault(episode => episode switch
+                                    {
+                                        VodEpisodeNode vodEpisode => vodEpisode?.Series?.Episode == value.Episode,
+                                        TvEpisodeNode tvEpisode => tvEpisode?.Series?.Episode == value.Episode,
+                                        _ => false
+                                    });
+                                */
+
+                                return new episodenum
+                                {
+                                    // <series>.<episode>[/totalEpisodes].<part>/<totalParts>
+                                    Value = ""
+                                    + (value.Season ?? 0)
+                                    + "." + (value.Episode ?? 0) + "/" + (seasonInfo?.Series?.PartsCount ?? 1)
+                                    + "." + (value.Part ?? 0) + "/" + (value.PartsCount ?? 1)
+                                };
                             }
                         ),
                         credits = GetCredits(bcast),
@@ -375,7 +361,7 @@ namespace Init7.Epg.Swisscom
                         )
                     };
                     epgOut.TryAddProgramme(availability.AvailabilityStart.Value, prg);
-                    
+
                 }
             }
         }
@@ -391,7 +377,10 @@ namespace Init7.Epg.Swisscom
             foreach (var idChunk in population.Chunk(CHANNELS_PER_REQUEST))
             {
                 var epgIn = await _client.GetEpg(from, to, idChunk);
-                HandleChunk(epgIn, epgOut);
+                await HandleChunk(epgIn, epgOut);
+
+                // save some ram by cleaning up the seasons info cache between channel ID chunks
+                _seriesInfo.Clear();
             }
         }
 
@@ -410,7 +399,7 @@ namespace Init7.Epg.Swisscom
 
             using var writer = new StreamWriter(fh, new UTF8Encoding(false));
 
-            foreach (var ch in _channels.Values.OrderBy(x => Convert.ToInt32(x.Identifier))) 
+            foreach (var ch in _channels.Values.OrderBy(x => Convert.ToInt32(x.Identifier)))
             {
                 await writer.WriteLineAsync($"{ch.Identifier}: {ch.Title}");
             }
@@ -421,7 +410,7 @@ namespace Init7.Epg.Swisscom
             _channels.Clear();
 
             var newChannels = await _client.GetChannels();
-            foreach(var channel in newChannels)
+            foreach (var channel in newChannels)
             {
                 _channels[channel.Identifier] = channel;
             }
@@ -438,15 +427,17 @@ namespace Init7.Epg.Swisscom
             }
         }
 
+        public SwisscomEpgClient Client => _client;
+
         public SwisscomEpgProvider(SwisscomEpgConfig config)
         {
             _config = config;
             _client = new SwisscomEpgClient();
             _channels = new Dictionary<string, Channel>();
-            if(config.ChannelMappings != null)
+            if (config.ChannelMappings != null)
             {
                 _swisscomToInit7.Clear();
-                foreach(var mapping in config.ChannelMappings)
+                foreach (var mapping in config.ChannelMappings)
                 {
                     _swisscomToInit7.Add(mapping.Key, mapping.Value);
                 }

@@ -9,10 +9,12 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
 
+namespace Init7.Epg;
+
 public class Program
 {
 
-    private EpgBuilder _epgOut;
+    private readonly EpgBuilder _epgOut;
 
     async Task Run(string configPath, string outFilePath)
     {

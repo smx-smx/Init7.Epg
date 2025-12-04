@@ -37,7 +37,7 @@ namespace Init7.Epg
 
     public class EpgBuilder : XmlBuilder<tv>
     {
-        private IDictionary<string, EpgChannel> _channels;
+        private readonly IDictionary<string, EpgChannel> _channels;
 
         public EpgBuilder() : base(new tv())
         {

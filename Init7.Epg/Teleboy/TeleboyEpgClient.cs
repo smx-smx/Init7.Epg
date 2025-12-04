@@ -16,7 +16,7 @@ namespace Init7.Epg.Teleboy
 
         public TeleboyEpgClient()
         {
-            _httpClient = new HttpClient();
+            _httpClient = new HttpClient(new RequestLoggingHandler<TeleboyEpgClient>());
             _httpClient.DefaultRequestHeaders.Add("X-Teleboy-ApiKey", "e899f715940a209148f834702fc7f340b6b0496b62120b3ed9c9b3ec4d7dca00");
         }
 
@@ -55,7 +55,6 @@ namespace Init7.Epg.Teleboy
             var uriBuilder = new UriBuilder("https://tv.api.teleboy.ch/epg/broadcasts");
             uriBuilder.Query = para.ToString();
 
-            Console.WriteLine(uriBuilder.Uri.ToString());
             var resp = await _httpClient.GetAsync(uriBuilder.Uri);
             var body = await resp.Content.ReadFromJsonAsync(
                 typeof(TeleboyEpgResponse),
