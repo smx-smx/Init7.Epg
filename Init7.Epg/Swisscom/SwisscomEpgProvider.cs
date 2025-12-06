@@ -107,7 +107,7 @@ namespace Init7.Epg.Swisscom
 
         private static IEnumerable<image> GetImages(TvBroadcast node, imageType type)
         {
-            var images = from n in node.Nodes?.GetNodes<Image>() ?? Enumerable.Empty<Image>()
+            var images = from n in node.Content?.Nodes?.GetNodes<Image>() ?? Enumerable.Empty<Image>()
                          where n.Role is not null
                             && n.ContentPath is not null
                          select n;
@@ -118,9 +118,10 @@ namespace Init7.Epg.Swisscom
                     from n in images
                     where n.Shape == "BannerL1"
                        || n.Shape == "BannerL2"
+                       || n.Role == "Lane"
                     select new image
                     {
-                        type = imageType.poster,
+                        type = type,
                         sizeSpecified = true,
                         size = imageSize.Item3,
                         Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
@@ -134,9 +135,11 @@ namespace Init7.Epg.Swisscom
                     where n.Shape == "Backdrop"
                        || n.Shape == "Iconic"
                        || n.Shape == "KeyArt"
+                       || n.Role == "Stage"
+                       || n.Role == "Landscape"
                     select new image
                     {
-                        type = imageType.backdrop,
+                        type = type,
                         sizeSpecified = true,
                         size = imageSize.Item3,
                         Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
@@ -150,7 +153,7 @@ namespace Init7.Epg.Swisscom
                    where n.Shape == "Participant"
                    select new image
                    {
-                       type = imageType.backdrop,
+                       type = type,
                        sizeSpecified = true,
                        size = imageSize.Item3,
                        Value = BuildImageUri(n.ContentPath!, imageSize.Item3)

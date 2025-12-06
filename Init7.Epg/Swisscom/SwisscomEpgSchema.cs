@@ -338,7 +338,7 @@ public class NodeCollection
         var key = Helpers.GetNodeKeys<T>().First();
 
         return from itm in Items
-               where (itm.Domain == key.Domain && itm.Kind == key.Kind)
+               where (key.Domain == null || itm.Domain == key.Domain) && itm.Kind == key.Kind
                select itm as T;
     }
 }
