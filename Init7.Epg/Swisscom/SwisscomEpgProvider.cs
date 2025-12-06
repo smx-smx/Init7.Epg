@@ -121,6 +121,7 @@ namespace Init7.Epg.Swisscom
                        || n.Role == "Lane"
                     select new image
                     {
+                        typeSpecified = true,
                         type = type,
                         sizeSpecified = true,
                         size = imageSize.Item3,
@@ -139,6 +140,7 @@ namespace Init7.Epg.Swisscom
                        || n.Role == "Landscape"
                     select new image
                     {
+                        typeSpecified = true,
                         type = type,
                         sizeSpecified = true,
                         size = imageSize.Item3,
@@ -153,6 +155,7 @@ namespace Init7.Epg.Swisscom
                    where n.Shape == "Participant"
                    select new image
                    {
+                       typeSpecified = true,
                        type = type,
                        sizeSpecified = true,
                        size = imageSize.Item3,
