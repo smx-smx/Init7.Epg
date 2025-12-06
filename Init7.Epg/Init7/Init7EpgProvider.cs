@@ -112,7 +112,11 @@ namespace Init7.Epg.Init7
                         value = sr
                     })
                 };
-                epgOut.TryAddProgramme(itm.TimeSlot.LowerTimeIso, prg);
+                epgOut.TryAddProgramme(
+                    itm.TimeSlot.LowerTimeIso,
+                    itm.TimeSlot.UpperTimeIso,
+                    prg,
+                    allowAdd: true);
             }
         }
 

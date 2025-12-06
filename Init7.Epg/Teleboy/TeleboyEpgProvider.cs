@@ -1,5 +1,6 @@
 ﻿using Init7.Epg.Init7;
 using Init7.Epg.Schema;
+using Init7.Epg.Swisscom.Schema;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,7 +40,7 @@ namespace Init7.Epg.Teleboy
 
         private readonly HashSet<string> _teleboyChannels = new HashSet<string>();
 
-        (DateTimeOffset, DateTimeOffset) HandleChunk_Teleboy(
+        void HandleChunk_Teleboy(
             TeleboyEpgResponse epgIn,
             EpgBuilder epgOut)
         {
@@ -47,11 +48,11 @@ namespace Init7.Epg.Teleboy
             var dtMin = dtNow;
             var dtMax = dtNow;
 
-            if (!epgIn.Success || epgIn.Data == null) return (dtMin, dtMax);
+            if (!epgIn.Success || epgIn.Data == null) return;
             foreach (var itm in epgIn.Data.Items)
             {
                 if (!itm.Begin.HasValue) continue;
-                if (!itm.End.HasValue) continue;
+
                 var station = itm.Station;
                 if (station == null) continue;
 
@@ -103,16 +104,6 @@ namespace Init7.Epg.Teleboy
                     }
                 }
 
-
-                if (itm.Begin < dtMin)
-                {
-                    dtMin = itm.Begin.Value;
-                }
-                if (itm.End > dtMax)
-                {
-                    dtMax = itm.End.Value;
-                }
-
                 var prg = new programme
                 {
                     title = CommonConverters.ConvertSingleNullable(itm.Title, value => new title
@@ -130,21 +121,26 @@ namespace Init7.Epg.Teleboy
                     })?.Let(TeleboyConverters.ConvertGenre),
                     channel = chan_out.id,
                     start = CommonConverters.ConvertDateTimeXmlTv(itm.Begin.Value),
-                    stop = CommonConverters.ConvertDateTimeXmlTv(itm.End.Value),
-                    length = new length
+                    stop = itm.End.HasValue ? CommonConverters.ConvertDateTimeXmlTv(itm.End.Value) : null,
+                    length = itm.End.HasValue ? new length
                     {
                         units = lengthUnits.seconds,
                         Value = (itm.End.Value - itm.Begin.Value).TotalSeconds.ToString()
-                    },
+                    } : null,
                     desc = CommonConverters.ConvertSingleNullable(itm.ShortDescription, value => new desc
                     {
                         Value = value
                     })
                 };
-                epgOut.TryAddProgramme(itm.Begin.Value, prg);
+                if(!epgOut.TryAddProgramme(
+                    itm.Begin.Value,
+                    itm.End,
+                    prg))
+                {
+                    Console.Error.WriteLine($"Failed to add program \"{prg.title?.FirstOrDefault()?.Value ?? string.Empty}\" to channel {chan_out.id}. " +
+                            $"Start Time: {itm.Begin.Value}");
+                }
             }
-
-            return (dtMin, dtMax);
         }
 
 

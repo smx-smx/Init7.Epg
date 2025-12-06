@@ -20,6 +20,7 @@ namespace Init7.Epg.Swisscom
     public class SwisscomEpgClient : IDisposable
     {
         private readonly HttpClient _httpClient;
+
         private static readonly Uri API_CHANNELS = new Uri("https://services.sg101.prd.sctv.ch/portfolio/tv/channels");
         private static readonly Uri API_CATALOG = new Uri("https://services.sg101.prd.sctv.ch/catalog/tv/channels/list");
         private static readonly Uri API_GENRES = new Uri("https://services.sg101.prd.sctv.ch/catalog/tv/genres/detail");

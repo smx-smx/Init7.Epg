@@ -22,6 +22,8 @@ namespace Init7.Epg
             _guests = new List<guest>();
         }
 
+        public int Length => _actors.Count + _producers.Count + _directors.Count + _guests.Count;
+
         public void AddActor(actor actor)
         {
             _actors.Add(actor);

@@ -13,6 +13,7 @@ namespace Init7.Epg.Swisscom
         public bool StandaloneMode { get; set; } = false;
         public bool OnlyMapped { get; set; } = false;
         public SwisscomEpgLanguage Language { get; set; } = SwisscomEpgLanguage.English;
+        public bool ReplaceEpg { get; set; } = false;
     }
 
     public class SwisscomEpgProvider : IEpgProvider, IDisposable
@@ -53,7 +54,7 @@ namespace Init7.Epg.Swisscom
                 imageSize.Item3 => SIZE_LARGE,
                 _ => SIZE_LARGE
             };
-            return $"{IMAGES_URL}/{contentPath}_w{sizeSpec}.jpg";
+            return $"{IMAGES_URL}/{contentPath}_w{sizeSpec}.png";
         }
 
         private static string? GetAudio(TvBroadcast node)
@@ -69,7 +70,7 @@ namespace Init7.Epg.Swisscom
             return null;
         }
 
-        private static credits GetCredits(TvBroadcast node)
+        private static credits? GetCredits(TvBroadcast node)
         {
             var ecb = new EpgCreditBuilder();
 
@@ -101,7 +102,7 @@ namespace Init7.Epg.Swisscom
                 }
             }
 
-            return ecb.Build();
+            return ecb.Length > 0 ? ecb.Build() : null;
 
         }
 
@@ -167,6 +168,27 @@ namespace Init7.Epg.Swisscom
             return Enumerable.Empty<image>();
         }
 
+        private string? TranslateChannelId(TvChannel item)
+        {
+            var id = item.Identifier;
+            bool notFound = false;
+            if (id == null
+                || _config.StandaloneMode
+                || (notFound = !_swisscomToInit7.TryGetValue(id, out var mappedId))
+            )
+            {
+                if (id != null && notFound && !_channelWarnings.Contains(id))
+                {
+                    _channelWarnings.Add(id);
+                    Console.Error.WriteLine($"Couldn't find mapping for channel \"{id}\"");
+                }
+                return id;
+            }
+
+            if (mappedId != null) return mappedId;
+            return id;
+        }
+
         async Task HandleChunk(TvResponse resp, EpgBuilder epgOut)
         {
             if (!_formatCheck)
@@ -185,28 +207,18 @@ namespace Init7.Epg.Swisscom
 
             foreach (var item in resp.Nodes.GetNodes<TvChannel>().Where(x => x.Identifier != null))
             {
-                var origChannelId = item.Identifier!;
-                var channelId = origChannelId;
-                var mappingAvailable = false;
-
-                if (!_config.StandaloneMode && !_swisscomToInit7.TryGetValue(origChannelId, out channelId))
-                {
-                    if (!(mappingAvailable = _channelWarnings.Contains(origChannelId)))
-                    {
-                        _channelWarnings.Add(origChannelId);
-                        Console.Error.WriteLine($"Couldn't find channel \"{origChannelId}\", skipping");
-                    }
-                    continue;
-                }
-                if (!_channels.TryGetValue(origChannelId, out var chanData))
-                {
-                    Console.Error.WriteLine($"Channel data not found for {origChannelId}, skipping");
-                    continue;
-                }
+                var channelId = TranslateChannelId(item);
+                if (channelId == null) continue;
 
                 var channelName = item.Content?.Description?.Title;
                 var channelLang = item.Content?.Description?.Language;
 
+                if (item.Identifier == null || !_channels.TryGetValue(item.Identifier, out var chanData))
+                {
+                    Console.Error.WriteLine($"Channel data not found for {item.Identifier}, skipping");
+                    continue;
+                }
+                
                 var chan_out = new channel
                 {
                     displayname = CommonConverters.ConvertSingleNullable(chanData.Title, v => new displayname
@@ -215,27 +227,31 @@ namespace Init7.Epg.Swisscom
                     }),
                     id = channelId,
                 };
-
-                if (epgOut.TryGetChannel(channelId, out var existing))
-                {
-                    chan_out.id = existing.id;
-                } else if (mappingAvailable)
-                {
-                    Console.Error.WriteLine($"incorrect/expired mapping for {item.Identifier}");
-                }
-
                 if (_config.StandaloneMode)
                 {
                     epgOut.TryAddChannel(chan_out);
                 }
 
+                // use fuzzy-matching only when we're enriching Init7 EPG
+                var useFuzzyMatching = !_config.ReplaceEpg;
+                
+                // if we wipe Init7 EPG, we will need to create new entries
+                var allowAdd = _config.ReplaceEpg;
+                
+                if (_config.ReplaceEpg)
+                {
+                    epgOut.ClearEpg(chan_out);
+                }
 
                 foreach (TvBroadcast bcast in item.Content?.Nodes?.GetNodes<TvBroadcast>() ?? Enumerable.Empty<TvBroadcast>())
                 {
                     var content = bcast.Content!;
                     var availability = bcast.Availabilities?.FirstOrDefault();
                     if (availability == null
-                        || availability.AvailabilityStart == null) continue;
+                        || availability.AvailabilityStart == null)
+                    {
+                        continue;
+                    }
 
                     var seriesId = bcast.Content?.Series?.GlobalSeriesIdentifier ?? bcast.Series?.GlobalSeriesIdentifier;
                     SeriesResponse? seriesInfo = null;
@@ -376,8 +392,17 @@ namespace Init7.Epg.Swisscom
                             }
                         )
                     };
-                    epgOut.TryAddProgramme(availability.AvailabilityStart.Value, prg);
 
+                    if(!epgOut.TryAddProgramme(
+                        availability.AvailabilityStart.Value,
+                        availability.AvailabilityEnd,
+                        prg,
+                        fuzzy: useFuzzyMatching,
+                        allowAdd: allowAdd))
+                    {
+                        Console.Error.WriteLine($"Failed to add program \"{prg.title?.FirstOrDefault()?.Value ?? string.Empty}\" to channel {channelId}. " +
+                            $"Start Time: {availability.AvailabilityStart.Value}");
+                    }
                 }
             }
         }

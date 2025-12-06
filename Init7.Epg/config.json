@@ -123,6 +123,7 @@
       "fetch_forward": "2:00:00",
       "standalone": false
     },
+    "replace": true,
     "language": "en",
     "mappings": {
       "3": "2M.ma",

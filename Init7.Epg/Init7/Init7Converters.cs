@@ -51,7 +51,7 @@ namespace Init7.Epg.Init7
 
     public class Init7Converters
     {
-        public static credits ConvertCredits(ICollection<EpgResultCredit> credits)
+        public static credits? ConvertCredits(ICollection<EpgResultCredit> credits)
         {
             var ecb = new EpgCreditBuilder();
             foreach (var itm in credits)
@@ -78,7 +78,7 @@ namespace Init7.Epg.Init7
                         break;
                 }
             }
-            return ecb.Build();
+            return ecb.Length > 0 ? ecb.Build() : null;
         }
     }
 }

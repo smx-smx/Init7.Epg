@@ -37,6 +37,8 @@ namespace Init7.Epg
     {
         [JsonPropertyName("common")]
         public EpgProviderConfig? ProviderConfig { get; set; }
+        [JsonPropertyName("replace")]
+        public bool ReplaceEpg { get; set; }
         [JsonPropertyName("language")]
         public string Language { get; set; } = "en";
         [JsonPropertyName("mappings")]

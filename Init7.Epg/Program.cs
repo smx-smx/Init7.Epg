@@ -47,7 +47,9 @@ public class Program
                     // used for testing to ignore Init7 relationship
                     StandaloneMode = schema?.Swisscom?.ProviderConfig?.StandaloneMode ?? false,
                     // fetch EPG only for mapped channels
-                    OnlyMapped = true
+                    OnlyMapped = true,
+                    // deletes Init7 EPG for mapped channels
+                    ReplaceEpg = schema?.Swisscom?.ReplaceEpg ?? false
                 }) : null,
             schema?.Teleboy?.ProviderConfig?.Enabled ?? true
                 ? new TeleboyEpgProvider(new TeleboyEpgProviderConfig
