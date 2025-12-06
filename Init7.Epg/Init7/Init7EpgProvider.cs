@@ -96,7 +96,7 @@ namespace Init7.Epg.Init7
                     icon = itm.Icons.Select(ico => new icon
                     {
                         src = ico
-                    }).ToArray(),
+                    }).Take(1).ToArray(),
                     country = itm.Country?.Split(',')
                         ?.Select(itm => new country
                         {

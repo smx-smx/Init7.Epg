@@ -53,7 +53,7 @@ namespace Init7.Epg.Swisscom
                 imageSize.Item3 => SIZE_LARGE,
                 _ => SIZE_LARGE
             };
-            return $"{IMAGES_URL}/{contentPath}_w{sizeSpec}.webp";
+            return $"{IMAGES_URL}/{contentPath}_w{sizeSpec}.jpg";
         }
 
         private static string? GetAudio(TvBroadcast node)
@@ -301,6 +301,14 @@ namespace Init7.Epg.Swisscom
                             ..GetImages(bcast, imageType.poster),
                             ..GetImages(bcast, imageType.backdrop)
                         ],
+                        icon = ((IEnumerable<icon>)[
+                            ..GetImages(bcast, imageType.poster).Select(img => new icon {
+                                src = img.Value
+                            }),
+                            ..GetImages(bcast, imageType.backdrop).Select(img => new icon {
+                                src = img.Value
+                            })
+                        ]).Take(1).ToArray(),
                         rating = CommonConverters.ConvertSingleNullable(
                             content?.Description?.AgeRestrictionRating != null
                             || content?.Description?.AgeRestrictionSystem != null,
