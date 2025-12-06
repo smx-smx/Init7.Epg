@@ -108,59 +108,59 @@ namespace Init7.Epg.Swisscom
         private static IEnumerable<image> GetImages(TvBroadcast node, imageType type)
         {
             var images = from n in node.Content?.Nodes?.GetNodes<Image>() ?? Enumerable.Empty<Image>()
-                         where n.Role is not null
-                            && n.ContentPath is not null
+                         where n.ContentPath is not null
                          select n;
 
             if (type == imageType.poster)
             {
-                return
-                    from n in images
-                    where n.Shape == "BannerL1"
-                       || n.Shape == "BannerL2"
-                       || n.Role == "Lane"
-                    select new image
-                    {
-                        typeSpecified = true,
-                        type = type,
-                        sizeSpecified = true,
-                        size = imageSize.Item3,
-                        Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
-                    };
+                var result = from n in images
+                             where n.Shape == "BannerL1"
+                                || n.Shape == "BannerL2"
+                                || n.Role == "Lane"
+                                || (n.HasTitle.HasValue && n.HasTitle.Value)
+                             select new image
+                             {
+                                 typeSpecified = true,
+                                 type = type,
+                                 sizeSpecified = true,
+                                 size = imageSize.Item3,
+                                 Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
+                             };
+                return result;
             }
 
             if (type == imageType.backdrop)
             {
-                return
-                    from n in images
-                    where n.Shape == "Backdrop"
-                       || n.Shape == "Iconic"
-                       || n.Shape == "KeyArt"
-                       || n.Role == "Stage"
-                       || n.Role == "Landscape"
-                    select new image
-                    {
-                        typeSpecified = true,
-                        type = type,
-                        sizeSpecified = true,
-                        size = imageSize.Item3,
-                        Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
-                    };
+                var result = from n in images
+                             where n.Shape == "Backdrop"
+                                || n.Shape == "Iconic"
+                                || n.Shape == "KeyArt"
+                                || n.Role == "Stage"
+                                || n.Role == "Landscape"
+                             select new image
+                             {
+                                 typeSpecified = true,
+                                 type = type,
+                                 sizeSpecified = true,
+                                 size = imageSize.Item3,
+                                 Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
+                             };
+                return result;
             }
 
             if (type == imageType.character)
             {
-                return
-                   from n in images
-                   where n.Shape == "Participant"
-                   select new image
-                   {
-                       typeSpecified = true,
-                       type = type,
-                       sizeSpecified = true,
-                       size = imageSize.Item3,
-                       Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
-                   };
+                var result = from n in images
+                             where n.Shape == "Participant"
+                             select new image
+                             {
+                                 typeSpecified = true,
+                                 type = type,
+                                 sizeSpecified = true,
+                                 size = imageSize.Item3,
+                                 Value = BuildImageUri(n.ContentPath!, imageSize.Item3)
+                             };
+                return result;
             }
 
             // $TODO: fallback?
@@ -297,10 +297,12 @@ namespace Init7.Epg.Swisscom
                                 Value = value
                             }
                         ),
+                        /*
                         image = [
                             ..GetImages(bcast, imageType.poster),
                             ..GetImages(bcast, imageType.backdrop)
                         ],
+                        */
                         icon = ((IEnumerable<icon>)[
                             ..GetImages(bcast, imageType.poster).Select(img => new icon {
                                 src = img.Value
