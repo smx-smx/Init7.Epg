@@ -162,7 +162,7 @@ namespace Init7.Epg
 
             if (maxDelta == TimeSpan.Zero)
             {
-                if (_programsByStart.TryGetValue(start, out var existing))
+                if (_programsByStart.TryGetValue(start, out var existing) && existing.End == end)
                 {
                     match = new ProgramMatch(TimeSpan.Zero, existing);
                     return true;
@@ -232,7 +232,8 @@ namespace Init7.Epg
         }
 
         public bool TryAddProgramme(DateTimeOffset start, DateTimeOffset? end, programme program,
-            bool overwrite, bool merge, bool fuzzy, bool allowAdd)
+            TimeSpan? maxDelta,
+            bool overwrite, bool merge, bool allowAdd)
         {
             if (overwrite)
             {
@@ -240,8 +241,7 @@ namespace Init7.Epg
                 return true;
             }
 
-            var maxDelta = fuzzy ? TimeSpan.FromMinutes(10) : TimeSpan.Zero;
-            if(TryFindClosestEntry(start, end, maxDelta, out var closest))
+            if(TryFindClosestEntry(start, end, maxDelta.HasValue ? maxDelta.Value : TimeSpan.Zero, out var closest))
             {
                 if (!merge)
                 {
@@ -282,14 +282,14 @@ namespace Init7.Epg
         public bool TryAddProgramme(DateTimeOffset start, DateTimeOffset? end, programme prg,
             bool overwrite = false,
             bool merge = true,
-            bool fuzzy = false,
+            TimeSpan? maxDelta = null,
             bool allowAdd = false)
         {
             if (!_channels.TryGetValue(prg.channel, out var channel))
             {
                 return false;
             }
-            return channel.TryAddProgramme(start, end, prg, overwrite, merge, fuzzy, allowAdd);
+            return channel.TryAddProgramme(start, end, prg, maxDelta, overwrite, merge, allowAdd);
         }
 
         public bool ClearEpg(channel channel)

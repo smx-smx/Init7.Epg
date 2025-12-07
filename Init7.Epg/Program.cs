@@ -49,7 +49,8 @@ public class Program
                     // fetch EPG only for mapped channels
                     OnlyMapped = true,
                     // deletes Init7 EPG for mapped channels
-                    ReplaceEpg = schema?.Swisscom?.ReplaceEpg ?? false
+                    ReplaceEpg = schema?.Swisscom?.ReplaceEpg ?? false,
+                    FuzzyMaxDelta = schema?.Swisscom?.ProviderConfig?.FuzzyMaxDelta ?? TimeSpan.Zero
                 }) : null,
             schema?.Teleboy?.ProviderConfig?.Enabled ?? true
                 ? new TeleboyEpgProvider(new TeleboyEpgProviderConfig

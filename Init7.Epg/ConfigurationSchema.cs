@@ -17,6 +17,8 @@ namespace Init7.Epg
         public TimeSpan? FetchForward { get; set; }
         [JsonPropertyName("standalone")]
         public bool StandaloneMode { get; set; }
+        [JsonPropertyName("fuzzy_max_delta")]
+        public TimeSpan FuzzyMaxDelta { get; set; } = TimeSpan.Zero;
     }
 
     public class Init7ConfigurationSchema

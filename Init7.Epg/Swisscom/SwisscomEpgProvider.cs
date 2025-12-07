@@ -14,6 +14,7 @@ namespace Init7.Epg.Swisscom
         public bool OnlyMapped { get; set; } = false;
         public SwisscomEpgLanguage Language { get; set; } = SwisscomEpgLanguage.English;
         public bool ReplaceEpg { get; set; } = false;
+        public TimeSpan FuzzyMaxDelta { get; set; } = TimeSpan.Zero;
     }
 
     public class SwisscomEpgProvider : IEpgProvider, IDisposable
@@ -233,7 +234,7 @@ namespace Init7.Epg.Swisscom
                 }
 
                 // use fuzzy-matching only when we're enriching Init7 EPG
-                var useFuzzyMatching = !_config.ReplaceEpg;
+                var maxDelta = _config.ReplaceEpg ? TimeSpan.Zero : _config.FuzzyMaxDelta;
                 
                 // if we wipe Init7 EPG, we will need to create new entries
                 var allowAdd = _config.ReplaceEpg;
@@ -397,7 +398,7 @@ namespace Init7.Epg.Swisscom
                         availability.AvailabilityStart.Value,
                         availability.AvailabilityEnd,
                         prg,
-                        fuzzy: useFuzzyMatching,
+                        maxDelta: maxDelta,
                         allowAdd: allowAdd))
                     {
                         Console.Error.WriteLine($"Failed to add program \"{prg.title?.FirstOrDefault()?.Value ?? string.Empty}\" to channel {channelId}. " +
