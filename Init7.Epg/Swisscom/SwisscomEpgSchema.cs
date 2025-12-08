@@ -627,13 +627,11 @@ public class TvBroadcast : Node
     public IEnumerable<NodeRelation<T>> GetRelations<T>() where T : Node
     {
         var key = Helpers.GetNodeKeys<T>().First();
-        return from node in Relations
-               where node.Domain == key.Domain
-                && node.Kind == key.Kind
-                && node.TargetNode is not null
-                && node.TargetNode.Domain == key.Domain
-                && node.TargetNode.Kind == key.Kind
-               select new NodeRelation<T>(node);
+        var result = from node in Relations
+                     where node.Domain == key.Domain
+                      && node.Kind == key.Kind
+                     select new NodeRelation<T>(node);
+        return result;
     }
 
 }
@@ -812,15 +810,15 @@ public class NodeRelation<T> where T : Node
     public NodeRelation(NodeRelation node)
     {
         Relation = node;
-        if (node.TargetNode is not T target)
+        if (node.TargetNode is not null && node.TargetNode is not T target)
         {
             throw new InvalidDataException($"Cannot cast TragetNode to {typeof(T).FullName}");
         }
-        TargetNode = target;
+        TargetNode = node.TargetNode as T;
     }
 
     public NodeRelation Relation { get; private set; }
-    public T TargetNode { get; private set; }
+    public T? TargetNode { get; private set; }
 }
 
 [NodeDomain("TV")]

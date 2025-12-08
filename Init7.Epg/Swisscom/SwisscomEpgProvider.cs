@@ -78,6 +78,10 @@ namespace Init7.Epg.Swisscom
             foreach (var dude in node.GetRelations<UniversalParticipant>())
             {
                 var target = dude.TargetNode;
+                if(target is null)
+                {
+                    continue;
+                }
                 var descr = target.Content!.Description!;
 
                 switch (dude.Relation.Role)
