@@ -31,6 +31,15 @@ public class Program
                 ? new Init7EpgProvider(new Init7EpgConfig
                 {
                 }) : null,
+            schema?.Teleboy?.ProviderConfig?.Enabled ?? true
+                ? new TeleboyEpgProvider(new TeleboyEpgProviderConfig
+                {
+                    TimeSpanBackwards = schema?.Teleboy?.ProviderConfig?.FetchBack ?? TimeSpan.FromHours(6),
+                    TimeSpanForward = schema?.Teleboy?.ProviderConfig?.FetchForward ?? TimeSpan.FromDays(2),
+                    // used for testing to ignore Init7 relationship
+                    StandaloneMode = schema?.Teleboy?.ProviderConfig?.StandaloneMode ?? false,
+                    ChannelMappings = schema?.Teleboy?.Mappings
+                }) : null,
             schema?.Swisscom?.ProviderConfig?.Enabled ?? true
                 ? new SwisscomEpgProvider(new SwisscomEpgConfig
                 {
@@ -51,15 +60,6 @@ public class Program
                     // deletes Init7 EPG for mapped channels
                     ReplaceEpg = schema?.Swisscom?.ReplaceEpg ?? false,
                     FuzzyMaxDelta = schema?.Swisscom?.ProviderConfig?.FuzzyMaxDelta ?? TimeSpan.Zero
-                }) : null,
-            schema?.Teleboy?.ProviderConfig?.Enabled ?? true
-                ? new TeleboyEpgProvider(new TeleboyEpgProviderConfig
-                {
-                    TimeSpanBackwards = schema?.Teleboy?.ProviderConfig?.FetchBack ?? TimeSpan.FromHours(6),
-                    TimeSpanForward = schema?.Teleboy?.ProviderConfig?.FetchForward ?? TimeSpan.FromDays(2),
-                    // used for testing to ignore Init7 relationship
-                    StandaloneMode = schema?.Teleboy?.ProviderConfig?.StandaloneMode ?? false,
-                    ChannelMappings = schema?.Teleboy?.Mappings
                 }) : null
         }.Where(x => x is not null).Cast<IEpgProvider>();
         foreach (var prov in providers)

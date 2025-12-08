@@ -1,13 +1,5 @@
-﻿using Init7.Epg.Init7;
-using Init7.Epg.Schema;
-using Init7.Epg.Swisscom.Schema;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using Init7.Epg.Schema;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Init7.Epg.Teleboy
 {
@@ -132,13 +124,16 @@ namespace Init7.Epg.Teleboy
                         Value = value
                     })
                 };
-                if(!epgOut.TryAddProgramme(
+
+                var res = epgOut.TryAddProgramme(
                     itm.Begin.Value,
                     itm.End,
-                    prg))
+                    prg,
+                    allowAdd: true);
+
+                if (!res.Item1)
                 {
-                    Console.Error.WriteLine($"Failed to add program \"{prg.title?.FirstOrDefault()?.Value ?? string.Empty}\" to channel {chan_out.id}. " +
-                            $"Start Time: {itm.Begin.Value}");
+                    Console.Error.WriteLine(res.Item2);
                 }
             }
         }

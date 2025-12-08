@@ -1,11 +1,6 @@
 ﻿using Init7.Epg.Swisscom.Schema;
-using System.Collections.Specialized;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Net.Mime;
-using System.Runtime.InteropServices.Marshalling;
 using System.Text.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Init7.Epg.Swisscom
 {

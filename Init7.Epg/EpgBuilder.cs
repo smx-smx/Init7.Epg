@@ -1,14 +1,5 @@
 ﻿using Init7.Epg.Schema;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Serialization;
 
 namespace Init7.Epg
 {
@@ -21,7 +12,6 @@ namespace Init7.Epg
 
         public channel Data { get; private set; }
         public IEnumerable<programme> Programs => _programsByStart.Values.Select(e => e.Program);
-
 
         public EpgChannel(channel channel)
         {
@@ -154,6 +144,54 @@ namespace Init7.Epg
 
         }
 
+        private IEnumerable<ProgramEntry> FindRange(DateTimeOffset start, DateTimeOffset end)
+        {
+            var keys = _programsByStart.Keys.ToList();
+            if (keys.Count == 0)
+            {
+                yield break;
+            }
+
+            var current = start;
+            while (current < end)
+            {
+                int index = keys.BinarySearch(current);
+
+                if (index < 0)
+                {
+                    index = ~index; // first entry with Start >= start
+                }
+
+                if(index >= keys.Count)
+                {
+                    yield break;
+                }
+
+                var entry = _programsByStart[keys[index]];
+
+                // program started at or during event
+                if(entry.Start >= start && entry.Start < end)
+                {
+                    yield return entry;
+                    current = entry.Start + TimeSpan.FromMinutes(1);
+                    continue;
+                }
+
+                // program started before event but finishing inside
+                if(entry.End >= start && entry.End < end)
+                {
+                    yield return entry;
+                    current = entry.End.HasValue
+                        ? entry.End.Value
+                        : current + TimeSpan.FromMinutes(1);
+                    continue;
+                }
+
+                // end of search
+                break;
+            }
+        }
+
         private bool TryFindClosestEntry(DateTimeOffset start, DateTimeOffset? end, TimeSpan maxDelta,
             [MaybeNullWhen(false)]
             out ProgramMatch match)
@@ -191,7 +229,7 @@ namespace Init7.Epg
 
             // Check a small window of candidates around the index
             // (typical closest match is within ±1 items)
-            foreach(var idx in (int[])[
+            foreach (var idx in (int[])[
                 index,
                 Math.Min(keys.Count, index + 1),
                 Math.Max(0, index - 1)
@@ -201,13 +239,13 @@ namespace Init7.Epg
 
                 var distStart = (entry.Start - start).Duration();
                 var distEnd = TimeSpan.Zero;
-                
+
                 if (entry.End.HasValue && end.HasValue)
                 {
                     distEnd = (entry.End.Value - end.Value).Duration();
                 }
 
-                if(distStart > maxDelta || distEnd > maxDelta)
+                if (distStart > maxDelta || distEnd > maxDelta)
                 {
                     continue;
                 }
@@ -226,39 +264,66 @@ namespace Init7.Epg
                 return true;
             }
 
-            // Swisscom has messed up timezone information
-            
             return false;
         }
 
-        public bool TryAddProgramme(DateTimeOffset start, DateTimeOffset? end, programme program,
+        private void DeleteOverlappingPrograms(DateTimeOffset start, DateTimeOffset end, programme program)
+        {
+            foreach (var entry in FindRange(start, end).Where(x => x.Start != start && x.End != end && x.Program != program))
+            {
+                Console.WriteLine($"Delete overlap: {start},{end} --> {entry.Start},{entry.End}, {entry.Program.title.FirstOrDefault()?.Value}");
+                _programsByStart.Remove(entry.Start);
+            }
+        }
+
+        public (bool, string) TryAddProgramme(DateTimeOffset start, DateTimeOffset? end, programme program,
             TimeSpan? maxDelta,
             bool overwrite, bool merge, bool allowAdd)
         {
+            var add = (DateTimeOffset start, DateTimeOffset? end, programme prg) =>
+            {
+                // we determined a program should be added. by this point, we shouldn't have any overlap
+                // (the previous one should have been merged)
+                if (end.HasValue)
+                {
+                    DeleteOverlappingPrograms(start, end.Value, program);
+                }
+                _programsByStart[start] = new ProgramEntry(start, end, prg);
+            };
+
             if (overwrite)
             {
-                _programsByStart[start] = new ProgramEntry(start, end, program);
-                return true;
+                add(start, end, program);
+                return (true, string.Empty);
             }
 
-            if(TryFindClosestEntry(start, end, maxDelta.HasValue ? maxDelta.Value : TimeSpan.Zero, out var closest))
+            if (TryFindClosestEntry(start, end, maxDelta.HasValue ? maxDelta.Value : TimeSpan.Zero, out var closest))
             {
                 if (!merge)
                 {
-                    return false;
+                    return (false, $"[{Data.id}] Found program, but merge is disabled");
                 }
-                
+
                 var merged = MergeProgramme(closest.Entry.Program, program);
-                _programsByStart[closest.Entry.Start] = new ProgramEntry(start, end, merged);
-                return true;
-            } else if(allowAdd)
-            {
-                _programsByStart[start] = new ProgramEntry(start, end, program);
-                return true;
-            } else
-            {
-                return false;
+                add(closest.Entry.Start, closest.Entry.End, merged);
+                return (true, string.Empty);
             }
+            
+            if (allowAdd && end.HasValue)
+            {
+                var overlaps = FindRange(start, end.Value).ToList();
+                if (!overlaps.Any())
+                {
+                    add(start, end, program);
+                    return (true, string.Empty);
+                } else
+                {
+                    return (false, $"[{Data.id}] Found {overlaps.Count} overlaps for {start},{end},{program.title?.FirstOrDefault()?.Value}: \n"
+                        + string.Join('\n',overlaps.Select(x => $"{x.Start},{x.End},{x.Program.title?.FirstOrDefault()?.Value}").ToArray()));
+                }
+            }
+
+            return (false, $"[{Data.id}] AllowAdd is disabled");
         }
 
         public void ClearEpg()
@@ -279,7 +344,8 @@ namespace Init7.Epg
             _channels = new Dictionary<string, EpgChannel>(StringComparer.InvariantCultureIgnoreCase);
         }
 
-        public bool TryAddProgramme(DateTimeOffset start, DateTimeOffset? end, programme prg,
+        public (bool,string) TryAddProgramme(
+            DateTimeOffset start, DateTimeOffset? end, programme prg,
             bool overwrite = false,
             bool merge = true,
             TimeSpan? maxDelta = null,
@@ -287,7 +353,7 @@ namespace Init7.Epg
         {
             if (!_channels.TryGetValue(prg.channel, out var channel))
             {
-                return false;
+                return (false, $"Channel {prg.channel} not found");
             }
             return channel.TryAddProgramme(start, end, prg, maxDelta, overwrite, merge, allowAdd);
         }

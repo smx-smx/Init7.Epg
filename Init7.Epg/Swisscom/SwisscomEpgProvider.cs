@@ -219,7 +219,7 @@ namespace Init7.Epg.Swisscom
                     Console.Error.WriteLine($"Channel data not found for {item.Identifier}, skipping");
                     continue;
                 }
-                
+
                 var chan_out = new channel
                 {
                     displayname = CommonConverters.ConvertSingleNullable(chanData.Title, v => new displayname
@@ -235,10 +235,7 @@ namespace Init7.Epg.Swisscom
 
                 // use fuzzy-matching only when we're enriching Init7 EPG
                 var maxDelta = _config.ReplaceEpg ? TimeSpan.Zero : _config.FuzzyMaxDelta;
-                
-                // if we wipe Init7 EPG, we will need to create new entries
-                var allowAdd = _config.ReplaceEpg;
-                
+
                 if (_config.ReplaceEpg)
                 {
                     epgOut.ClearEpg(chan_out);
@@ -394,15 +391,16 @@ namespace Init7.Epg.Swisscom
                         )
                     };
 
-                    if(!epgOut.TryAddProgramme(
+                    var res = epgOut.TryAddProgramme(
                         availability.AvailabilityStart.Value,
                         availability.AvailabilityEnd,
                         prg,
                         maxDelta: maxDelta,
-                        allowAdd: allowAdd))
+                        allowAdd: true);
+
+                    if (!res.Item1)
                     {
-                        Console.Error.WriteLine($"Failed to add program \"{prg.title?.FirstOrDefault()?.Value ?? string.Empty}\" to channel {channelId}. " +
-                            $"Start Time: {availability.AvailabilityStart.Value}");
+                        Console.Error.WriteLine(res.Item2);
                     }
                 }
             }
